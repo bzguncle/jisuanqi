@@ -1,0 +1,3671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色配置方案工具 - 铭文装备优化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        h1 {
+            font-size: 2.2em;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1em;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.2em;
+            color: #fff;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            font-size: 1.3em;
+        }
+
+        .note {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid #ffc107;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.85em;
+            color: #ffc107;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .character-item {
+            background: rgba(50, 50, 80, 0.6);
+            padding: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .character-item:hover:not(.disabled) {
+            background: rgba(77, 150, 255, 0.3);
+            border-color: rgba(77, 150, 255, 0.5);
+        }
+
+        .character-item.selected {
+            border-color: #4d96ff;
+            background: rgba(77, 150, 255, 0.3);
+        }
+
+        .character-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .character-name {
+            font-size: 1em;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .character-type {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .character-type.melee { color: #ff6b6b; }
+        .character-type.skill { color: #4d96ff; }
+        .character-type.normal { color: #6bcb77; }
+
+        .equipment-section {
+            margin-top: 20px;
+        }
+
+        .equipment-category {
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            font-size: 1em;
+            color: #888;
+            margin-bottom: 12px;
+            padding-left: 10px;
+            border-left: 3px solid;
+        }
+
+        .category-title.tank { border-color: #ff6b6b; }
+        .category-title.attack { border-color: #ffd93d; }
+        .category-title.support { border-color: #6bcb77; }
+
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+
+        .equipment-item {
+            background: rgba(50, 50, 80, 0.6);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .equipment-item:hover {
+            background: rgba(77, 150, 255, 0.3);
+            border-color: rgba(77, 150, 255, 0.5);
+        }
+
+        .equipment-item.selected {
+            border-color: #4d96ff;
+            background: rgba(77, 150, 255, 0.3);
+        }
+
+        .equipment-name {
+            font-size: 0.95em;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .equipment-bonus {
+            font-size: 0.75em;
+            color: #6bcb77;
+        }
+
+        .mode-section {
+            margin-top: 20px;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(50, 50, 80, 0.6);
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85em;
+        }
+
+        .mode-btn:hover {
+            border-color: #4d96ff;
+            background: rgba(77, 150, 255, 0.4);
+            color: #fff;
+        }
+
+        .mode-btn.active {
+            border-color: #4d96ff;
+            background: rgba(77, 150, 255, 0.4);
+            color: #fff;
+        }
+
+        .constraint-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .constraint-title {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .constraint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .constraint-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .constraint-label {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .constraint-inputs {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .constraint-inputs input {
+            width: 70px;
+            padding: 6px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            text-align: center;
+            font-size: 0.85em;
+        }
+
+        .constraint-inputs input:focus {
+            outline: none;
+            border-color: #4d96ff;
+        }
+
+        .constraint-inputs input::placeholder {
+            color: #555;
+        }
+
+        .constraint-inputs span {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .constraint-hint {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .food-select-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .food-fixed-btn {
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(50, 50, 80, 0.6);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s ease;
+        }
+
+        .food-fixed-btn:hover {
+            border-color: #6bcb77;
+            background: rgba(107, 203, 119, 0.4);
+            color: #fff;
+        }
+
+        .food-fixed-btn.selected {
+            border-color: #6bcb77;
+            background: rgba(107, 203, 119, 0.4);
+            color: #6bcb77;
+        }
+
+        .reset-constraints-btn {
+            margin-top: 16px;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 6px;
+            background: rgba(50, 50, 80, 0.6);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+
+        .reset-constraints-btn:hover {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+
+        .search-btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4d96ff, #6bcb77);
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(77, 150, 255, 0.4);
+        }
+
+        .search-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        /* 自定义配置板块 */
+        .custom-config-section {
+            margin-top: 30px;
+        }
+
+        .section-hint {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .custom-config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .custom-section {
+            margin-bottom: 20px;
+        }
+
+        .custom-section-title {
+            font-size: 1em;
+            color: #aaa;
+            margin-bottom: 12px;
+        }
+
+        .custom-character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .custom-char-btn {
+            padding: 10px 8px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: rgba(50, 50, 80, 0.6);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .custom-char-btn:hover {
+            background: rgba(77, 150, 255, 0.4);
+            color: #fff;
+            border-color: rgba(77, 150, 255, 0.5);
+        }
+
+        .custom-char-btn.selected {
+            border-color: #4d96ff;
+            background: rgba(77, 150, 255, 0.2);
+            color: #4d96ff;
+        }
+
+        .custom-char-btn .char-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .custom-char-btn .char-type {
+            font-size: 0.75em;
+            opacity: 0.7;
+        }
+
+        .custom-equip-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+
+        .custom-equip-btn {
+            padding: 10px 8px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background: rgba(50, 50, 80, 0.6);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .custom-equip-btn:hover {
+            background: rgba(77, 150, 255, 0.4);
+            color: #fff;
+            border-color: rgba(77, 150, 255, 0.5);
+        }
+
+        .custom-equip-btn.selected {
+            border-color: #ffd93d;
+            background: rgba(255, 217, 61, 0.4);
+            color: #ffd93d;
+        }
+
+        .food-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+
+        .food-select-btn {
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(50, 50, 80, 0.6);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .food-select-btn:hover {
+            border-color: #4d96ff;
+            background: rgba(77, 150, 255, 0.4);
+            color: #fff;
+        }
+
+        .food-select-btn.selected {
+            border-color: #6bcb77;
+            background: rgba(107, 203, 119, 0.4);
+            color: #6bcb77;
+        }
+
+        .insignia-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .insignia-selection-col {
+            background: rgba(50, 50, 80, 0.4);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .insignia-select-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .insignia-select-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .insignia-select-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .insignia-option {
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            background: rgba(50, 50, 80, 0.5);
+            cursor: pointer;
+            font-size: 0.75em;
+            color: #ccc;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .insignia-option:hover {
+            background: rgba(77, 150, 255, 0.3);
+            color: #fff;
+        }
+
+        .insignia-option.selected {
+            background: rgba(77, 150, 255, 0.4);
+            color: #4d96ff;
+        }
+
+        .insig-name {
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .insignia-count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            min-width: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .insignia-count:hover {
+            background: rgba(255, 107, 107, 0.5);
+            color: #fff;
+        }
+
+        .insignia-count.has-count {
+            background: rgba(77, 150, 255, 0.5);
+            color: #fff;
+        }
+
+        .insignia-ctrl-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .insignia-ctrl-btn.add {
+            background: rgba(77, 150, 255, 0.3);
+            color: #4d96ff;
+        }
+
+        .insignia-ctrl-btn.add:hover {
+            background: rgba(77, 150, 255, 0.6);
+            color: #fff;
+        }
+
+        .insignia-ctrl-btn.remove {
+            background: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+        }
+
+        .insignia-ctrl-btn.remove:hover {
+            background: rgba(255, 107, 107, 0.6);
+            color: #fff;
+        }
+
+        .insignia-ctrl-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .custom-result-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .custom-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .current-damage-display {
+            text-align: center;
+        }
+
+        .damage-label {
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .damage-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #6bcb77;
+            text-shadow: 0 0 20px rgba(107, 203, 119, 0.5);
+        }
+
+        .base-damage-compare {
+            text-align: right;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .damage-diff {
+            color: #6bcb77;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .damage-diff.negative {
+            color: #ff6b6b;
+        }
+
+        .custom-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .custom-stat-item {
+            background: rgba(50, 50, 80, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .custom-stat-label {
+            font-size: 0.75em;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .custom-stat-value {
+            font-size: 1.1em;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .insignia-summary {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .summary-zone {
+            background: rgba(50, 50, 80, 0.5);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #ccc;
+        }
+
+        .zone-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .zone-tag.red {
+            background: rgba(231, 76, 60, 0.4);
+            color: #e74c3c;
+        }
+
+        .zone-tag.blue {
+            background: rgba(52, 152, 219, 0.4);
+            color: #3498db;
+        }
+
+        .zone-tag.green {
+            background: rgba(46, 204, 113, 0.4);
+            color: #2ecc71;
+        }
+
+        .apply-from-results-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(77, 150, 255, 0.5);
+            border-radius: 8px;
+            background: rgba(77, 150, 255, 0.3);
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .apply-from-results-btn:hover {
+            background: rgba(77, 150, 255, 0.5);
+            border-color: #4d96ff;
+        }
+
+        .footer-notice {
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(255, 193, 7, 0.1);
+            border-top: 2px solid rgba(255, 193, 7, 0.3);
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .footer-content p {
+            font-size: 0.85em;
+            line-height: 1.8;
+            margin: 4px 0;
+            color: #fff;
+        }
+
+        .footer-content .footer-date {
+            margin-top: 12px;
+            font-size: 0.8em;
+            background: linear-gradient(to right, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: #fff;
+        }
+
+        .result-card {
+            background: rgba(50, 50, 80, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid #4d96ff;
+        }
+
+        .result-card.top-1 {
+            border-left-color: #ffd93d;
+            background: rgba(80, 70, 50, 0.5);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .result-rank {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffd93d;
+        }
+
+        .result-rank.top-1 {
+            font-size: 1.3em;
+        }
+
+        .result-damage {
+            font-size: 1.6em;
+            font-weight: bold;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .improvement-badge {
+            background: linear-gradient(135deg, #6bcb77, #4d96ff);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .mode-score-badge {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin-left: 10px;
+        }
+
+        .result-food {
+            display: inline-block;
+            background: rgba(107, 203, 119, 0.3);
+            color: #6bcb77;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+        }
+
+        .result-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .result-stat {
+            background: rgba(50, 50, 80, 0.5);
+            padding: 8px 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .result-stat-label {
+            font-size: 0.7em;
+            color: #aaa;
+            margin-bottom: 2px;
+        }
+
+        .result-stat-value {
+            font-size: 0.95em;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .insignia-section {
+            background: rgba(50, 50, 80, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .insignia-zone {
+            margin-bottom: 10px;
+        }
+
+        .insignia-zone:last-child {
+            margin-bottom: 0;
+        }
+
+        .zone-title {
+            font-size: 0.85em;
+            margin-bottom: 6px;
+        }
+
+        .zone-title.red { color: #ff6b6b; }
+        .zone-title.blue { color: #4d96ff; }
+        .zone-title.green { color: #6bcb77; }
+
+        .insignia-list {
+            font-size: 0.8em;
+            color: #aaa;
+            line-height: 1.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #4d96ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .base-stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .base-stat-item {
+            text-align: center;
+        }
+
+        .base-stat-label {
+            font-size: 0.75em;
+            color: #888;
+        }
+
+        .base-stat-value {
+            font-size: 0.95em;
+            color: #4d96ff;
+            font-weight: bold;
+        }
+
+        .huanmulan-notice {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: rgba(255, 152, 0, 0.15);
+            border: 1px solid rgba(255, 152, 0, 0.4);
+            border-radius: 8px;
+            color: #ff9800;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .huanmulan-notice .notice-icon {
+            font-size: 1.2em;
+        }
+
+        .huanmulan-notice .notice-text {
+            font-weight: bold;
+        }
+
+        .liumai-options-section {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(77, 150, 255, 0.08);
+            border: 1px solid rgba(77, 150, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .liumai-options-title {
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #4d96ff;
+            margin-bottom: 10px;
+        }
+
+        .liumai-options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .liumai-option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .liumai-group-name {
+            font-size: 0.75em;
+            color: #ffd93d;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .liumai-option-btn {
+            background: rgba(50, 50, 80, 0.6);
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .liumai-option-btn:hover {
+            background: rgba(77, 150, 255, 0.3);
+            border-color: rgba(77, 150, 255, 0.5);
+        }
+
+        .liumai-option-btn.selected {
+            border-color: #4d96ff;
+            background: rgba(77, 150, 255, 0.3);
+        }
+
+        .liumai-option-btn-label {
+            font-size: 0.85em;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .liumai-option-btn-effect {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>王者荣耀世界 角色配置方案工具</h1>
+            <p class="subtitle">共鸣、装备、铭文、食物综合优化系统</p>
+        </header>
+
+        <!-- 第一板块：共鸣选择 -->
+        <div class="card">
+            <h2 class="card-title"><span class="icon">👤</span> 第一板块：共鸣选择</h2>
+            <div class="note">
+                <strong>⚠️ 提示：</strong>流脉以终悟（十二级流脉突破）为准，凝武以红武60级为准，元流等级为60级，凝武只计算基本属性，不计算额外被动
+            </div>
+            <div class="character-grid" id="characterGrid"></div>
+            
+            <div class="base-stats-display" id="baseStatsDisplay" style="display: none;">
+                <div class="base-stat-item">
+                    <div class="base-stat-label">生命值</div>
+                    <div class="base-stat-value" id="statHP">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">攻击力</div>
+                    <div class="base-stat-value" id="statATK">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">防御力</div>
+                    <div class="base-stat-value" id="statDEF">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">暴击率</div>
+                    <div class="base-stat-value" id="statCritRate">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">暴击效果</div>
+                    <div class="base-stat-value" id="statCritDmg">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">流技强度</div>
+                    <div class="base-stat-value" id="statFlowPower">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">全流强度</div>
+                    <div class="base-stat-value" id="statFullFlow">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">追击率</div>
+                    <div class="base-stat-value" id="statChase">-</div>
+                </div>
+                <div class="base-stat-item">
+                    <div class="base-stat-label">额外攻击</div>
+                    <div class="base-stat-value" id="statExtraATK">-</div>
+                </div>
+            </div>
+            
+            <div class="huanmulan-notice" id="huanmulanNotice" style="display: none;">
+                <span class="notice-icon">💡</span>
+                <span class="notice-text">花木兰红武有15%暴击率加成</span>
+            </div>
+            
+            <!-- 流脉切换选项区域 -->
+            <div class="liumai-options-section" id="liumaiOptionsSection" style="display: none;">
+                <div class="liumai-options-title">🔄 流脉切换</div>
+                <div class="liumai-options-container" id="liumaiOptionsContainer"></div>
+            </div>
+        </div>
+
+        <!-- 第二板块：装备选择 -->
+        <div class="card">
+            <h2 class="card-title"><span class="icon">⚔️</span> 第二板块：装备选择</h2>
+            <div class="note">
+                <strong>⚠️ 提示：</strong>装备只计算套装数值，即金色五件套的数值，套装技能视为20级效果已触发
+            </div>
+            <div id="equipmentSection"></div>
+        </div>
+
+        <!-- 第三&四板块和优化模式 -->
+        <div class="two-column">
+            <!-- 左列：优化模式和搜索 -->
+            <div class="card">
+                <h2 class="card-title"><span class="icon">🎯</span> 优化模式</h2>
+                <div class="mode-grid" id="modeGrid"></div>
+
+                <!-- 属性约束设置 -->
+                <div class="constraint-section">
+                    <div class="constraint-title">⚙️ 属性约束范围（可选，留空表示不限制）</div>
+                    <div class="constraint-grid">
+                        <div class="constraint-item">
+                            <div class="constraint-label">最终攻击力</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_final_atk_min" placeholder="0" step="1">
+                                <span>~</span>
+                                <input type="number" id="con_final_atk_max" placeholder="∞" step="1">
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">最终防御力</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_final_def_min" placeholder="0" step="1">
+                                <span>~</span>
+                                <input type="number" id="con_final_def_max" placeholder="∞" step="1">
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">最终生命值</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_final_hp_min" placeholder="0" step="1">
+                                <span>~</span>
+                                <input type="number" id="con_final_hp_max" placeholder="∞" step="1">
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">暴击率（填百分数，如80）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_crit_rate_min" placeholder="0" step="1" min="0" max="100">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_crit_rate_max" placeholder="100" step="1" min="0" max="100">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">暴击效果（填百分数）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_crit_dmg_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_crit_dmg_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">流技强度（填百分数，如50）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_flow_power_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_flow_power_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">全流强度（填百分数）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_full_flow_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_full_flow_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">追击率（填百分数）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_chase_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_chase_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">破势强度（填百分数）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_break_power_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_break_power_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">治愈强度（填百分数）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_heal_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_heal_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">绝技充能效率（填百分数）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_charge_eff_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_charge_eff_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="constraint-item">
+                            <div class="constraint-label">额外攻击力（填百分数）</div>
+                            <div class="constraint-inputs">
+                                <input type="number" id="con_extra_atk_min" placeholder="0" step="1">
+                                <span>%</span>
+                                <span>~</span>
+                                <input type="number" id="con_extra_atk_max" placeholder="∞" step="1">
+                                <span>%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="reset-constraints-btn" onclick="resetConstraints()">🗑️ 重置所有约束</button>
+                </div>
+
+                <!-- 固定食物选择 -->
+                <div class="constraint-section">
+                    <div class="constraint-title">🍜 固定食物搜索（可选，不选则自动搜索最优食物）</div>
+                    <div class="food-select-grid" id="fixedFoodGrid"></div>
+                </div>
+
+                <button class="search-btn" id="searchBtn" onclick="startSearch()">
+                    🔍 开始搜索最优配置
+                </button>
+            </div>
+
+            <!-- 右列：基础伤害显示 -->
+            <div class="card">
+                <h2 class="card-title"><span class="icon">📊</span> 当前配置预览</h2>
+                <div id="configPreview">
+                    <p style="color: #888; text-align: center;">请选择共鸣和装备后查看</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果展示 -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">🏆</span> Top 10 最优配置</h2>
+                <div id="resultsContainer"></div>
+            </div>
+        </div>
+
+        <!-- 自定义配置预览板块 -->
+        <div class="custom-config-section" id="customConfigSection">
+            <div class="card">
+                <h2 class="card-title"><span class="icon">⚙️</span> 自定义配置预览</h2>
+                <p class="section-hint">手动选择共鸣、装备、食物和铭文，查看最终属性和伤害期望</p>
+                
+                <div class="custom-config-grid">
+                    <!-- 左列：手动选择 -->
+                    <div class="custom-select-area">
+                        <!-- 共鸣选择 -->
+                        <div class="custom-section">
+                            <h3 class="custom-section-title">👤 共鸣选择</h3>
+                            <div class="custom-character-grid" id="customCharacterGrid"></div>
+                        </div>
+                        
+                        <!-- 流脉切换选项区域 -->
+                        <div class="custom-section" id="customLiumaiOptionsSection" style="display: none;">
+                            <h3 class="custom-section-title">🔄 流脉切换</h3>
+                            <div class="liumai-options-container" id="customLiumaiOptionsContainer"></div>
+                        </div>
+                        
+                        <!-- 装备选择 -->
+                        <div class="custom-section">
+                            <h3 class="custom-section-title">⚔️ 装备选择</h3>
+                            <div class="custom-equip-grid" id="customEquipGrid"></div>
+                        </div>
+                        
+                        <!-- 食物选择 -->
+                        <div class="custom-section">
+                            <h3 class="custom-section-title">🍜 食物选择</h3>
+                            <div class="food-grid" id="customFoodGrid"></div>
+                        </div>
+                        
+                        <!-- 铭文选择 -->
+                        <div class="custom-section">
+                            <h3 class="custom-section-title">📜 铭文配置</h3>
+                            <div class="insignia-selection-grid">
+                                <div class="insignia-selection-col">
+                                    <div class="zone-title red">🔴 红区铭文</div>
+                                    <div class="insignia-select-list" id="customRedSelect"></div>
+                                </div>
+                                <div class="insignia-selection-col">
+                                    <div class="zone-title blue">🔵 蓝区铭文</div>
+                                    <div class="insignia-select-list" id="customBlueSelect"></div>
+                                </div>
+                                <div class="insignia-selection-col">
+                                    <div class="zone-title green">🟢 绿区铭文</div>
+                                    <div class="insignia-select-list" id="customGreenSelect"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右列：计算结果 -->
+                    <div class="custom-result-area">
+                        <div class="custom-result-header">
+                            <div class="current-damage-display">
+                                <div class="damage-label">伤害期望</div>
+                                <div class="damage-value" id="customDamageValue">0.00</div>
+                            </div>
+                            <div class="base-damage-compare">
+                                <span>基础伤害: <span id="customBaseDamage">0.00</span></span>
+                                <span class="damage-diff" id="customDamageDiff">+0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="custom-stats-grid" id="customStatsGrid">
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">最终攻击力</div>
+                                <div class="custom-stat-value" id="customFinalATK">0</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">最终防御力</div>
+                                <div class="custom-stat-value" id="customFinalDEF">0</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">最终生命值</div>
+                                <div class="custom-stat-value" id="customFinalHP">0</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">暴击率</div>
+                                <div class="custom-stat-value" id="customCritRate">0%</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">暴击效果</div>
+                                <div class="custom-stat-value" id="customCritDmg">0</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">流技强度</div>
+                                <div class="custom-stat-value" id="customFlowPower">0%</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">全流强度</div>
+                                <div class="custom-stat-value" id="customFullFlow">0%</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">追击率</div>
+                                <div class="custom-stat-value" id="customChase">0%</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">破势强度</div>
+                                <div class="custom-stat-value" id="customBreakPower">0%</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">治愈强度</div>
+                                <div class="custom-stat-value" id="customHeal">0%</div>
+                            </div>
+                            <div class="custom-stat-item">
+                                <div class="custom-stat-label">绝技充能效率</div>
+                                <div class="custom-stat-value" id="customChargeEff">0%</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 铭文汇总 -->
+                        <div class="insignia-summary">
+                            <div class="summary-zone">
+                                <span class="zone-tag red">红</span>
+                                <span id="customRedSummary">未选择</span>
+                            </div>
+                            <div class="summary-zone">
+                                <span class="zone-tag blue">蓝</span>
+                                <span id="customBlueSummary">未选择</span>
+                            </div>
+                            <div class="summary-zone">
+                                <span class="zone-tag green">绿</span>
+                                <span id="customGreenSummary">未选择</span>
+                            </div>
+                        </div>
+                        
+                        <button class="apply-from-results-btn" onclick="applyFromResults()">
+                            📋 从搜索结果导入
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>共鸣·装备·铭文·食物 综合优化工具 | 支持多种优化模式</p>
+        </footer>
+    </div>
+
+    <script>
+        // ============== 游戏数据 ==============
+
+        // 元流基础属性
+        const YUANLIU_BASE = {
+            HP: 4445,
+            ATK: 152,
+            DEF: 1782,
+            CRIT_RATE: 0.05,
+            CRIT_DMG: 0.5
+        };
+
+        // 角色/共鸣数据
+        const CHARACTERS = {
+            "yuanliu": {
+                name: "原初之流/元流之子",
+                available: true,
+                type: "melee",
+                typeName: "近战类共鸣",
+                liuMai: { HP: 2270, DEF: 960, EXTRA_ATK: 0.2, CHARGE_EFF: 0.142, FLOW_PENETRATE: 0.2 },
+                ningWu: { ATK: 840, HP: 500, CRIT_RATE: 0.106, FULL_FLOW: 0.087 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "加快z技能条速度", effect: {} },
+                            { id: "g1_o2", label: "连续两次成功QTE强化第三次QTE", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "二技能碎裂时间延长至16秒", effect: {} },
+                            { id: "g2_o2", label: "二技能碎裂状态下受额外伤害提升", effect: { FINAL_DMG: 0.4 } }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "xishi": {
+                name: "幻纱之灵/西施",
+                available: true,
+                type: "skill",
+                typeName: "技能类共鸣",
+                liuMai: { HP: 1110, DEF: 920, EXTRA_ATK: 0.181, FLOW_PENETRATE: 0.2, HEAL: 0.064 },
+                ningWu: { ATK: 840, HP: 300, HEAL: 0.039, CHARGE_EFF: 0.17 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "拉法球加爆炸伤害", effect: { FINAL_DMG: 0.6 } },
+                            { id: "g1_o2", label: "拉人加法球爆炸伤害", effect: { FINAL_DMG: 0.72 } }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "后台时法阵造成伤害自身获得绝技能量", effect: {} },
+                            { id: "g2_o2", label: "后台时法阵造成伤害自身CD减一秒", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "mengdu": {
+                name: "烈炮小子/蒙犽",
+                available: true,
+                type: "normal",
+                typeName: "普攻类共鸣",
+                liuMai: { HP: 970, EXTRA_ATK: 0.216, DEF: 960, CHASE: 0.104, FLOW_PENETRATE: 0.2 },
+                ningWu: { ATK: 800, HP: 290, CHASE: 0.173, EXTRA_ATK: 0.124 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "二技能强化", effect: {} },
+                            { id: "g1_o2", label: "过热的时候在天上飞暴击率提升", effect: { CRIT_RATE: 0.25 } }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "榴弹完美发射时额外发射两枚飞弹", effect: {} },
+                            { id: "g2_o2", label: "榴弹消耗热度降低", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "wangzhaojun": {
+                name: "冰雪之华/王昭君",
+                available: true,
+                type: "skill",
+                typeName: "技能类共鸣",
+                liuMai: { HP: 1000, EXTRA_ATK: 0.258, DEF: 960, FLOW_PENETRATE: 0.2 },
+                ningWu: { ATK: 760, HP: 270, HEAL: 0.07, EXTRA_ATK: 0.16 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "护盾存在时若处于后台，每秒获得1%绝技充能", effect: {} },
+                            { id: "g1_o2", label: "染霜持续时长翻倍，染霜状态下的目标受到凝属性攻击时暴击率提升", effect: { CRIT_RATE: 0.2 } }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "护盾持续期间提升受加持者50%防御力", effect: { FINAL_DEF: 0.5 } },
+                            { id: "g2_o2", label: "提高冰晶获取和利用效率", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "huanmulan": {
+                name: "传说之刃/花木兰",
+                available: true,
+                type: "melee",
+                typeName: "近战类共鸣",
+                liuMai: { HP: 3040, DEF: 1160, EXTRA_ATK: 0.266, FLOW_PENETRATE: 0.15 },
+                ningWu: { ATK: 840, HP: 500, FLOW_POWER: 0.124, CRIT_RATE: 0.256 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "二技能暴击额外获得一层花瓣", effect: {} },
+                            { id: "g1_o2", label: "化解后加四层花瓣", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "消耗一层花瓣提升5%伤害，最高六层", effect: { EXTRA_ATK: 0.3 } },
+                            { id: "g2_o2", label: "拥有至少四层花瓣时一技能额外造成50%伤害", effect: { FINAL_DMG: 0.5 } }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "kai": {
+                name: "破灭刃锋/铠",
+                available: true,
+                type: "melee",
+                typeName: "近战类共鸣",
+                liuMai: { HP: 2880, EXTRA_ATK: 0.139, DEF: 1200, EXTRA_DEF: 0.06 },
+                ningWu: { ATK: 760, HP: 450, EXTRA_DEF: 0.124, FULL_FLOW: 0.157 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "触发狂涌后提升防御力", effect: {} },
+                            { id: "g1_o2", label: "触发狂涌后逐渐获得涌动层数", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "招架后提升反击伤害", effect: {} },
+                            { id: "g2_o2", label: "未成功招架则缩短招架CD为0.5秒", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "galuo": {
+                name: "破魔之箭/伽罗",
+                available: true,
+                type: "normal",
+                typeName: "普攻类共鸣",
+                liuMai: { HP: 960, EXTRA_ATK: 0.223, DEF: 860, CRIT_RATE: 0.088, FLOW_PENETRATE: 0.2 },
+                ningWu: { ATK: 800, HP: 290, CRIT_RATE: 0.147, CHASE: 0.173 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "一技能普攻的伤害增加30%", effect: { FINAL_DMG: 0.3 } },
+                            { id: "g1_o2", label: "一技能加10%暴击", effect: { CRIT_RATE: 0.1 } }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "三技能冷却时间减五秒", effect: {} },
+                            { id: "g2_o2", label: "在三技能范围内提升15%攻击力", effect: { EXTRA_ATK: 0.15 } }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "sunbin": {
+                name: "逆流之时/孙膑",
+                available: true,
+                type: "skill",
+                typeName: "技能类共鸣",
+                liuMai: { HP: 1110, EXTRA_ATK: 0.181, DEF: 920, FLOW_POWER: 0.104, FLOW_PENETRATE: 0.2 },
+                ningWu: { HP: 270, ATK: 760, FLOW_POWER: 0.223, CHARGE_EFF: 0.307 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "三技能对一技能炸弹附着敌人造成伤害提升流技强度", effect: { FLOW_POWER: 0.3 } },
+                            { id: "g1_o2", label: "三技能对一技能炸弹附着敌人造成伤害提升攻击力和流技强度", effect: { EXTRA_ATK: 0.15, FLOW_POWER: 0.15 } }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "二技能期间切换共鸣减少二技能CD", effect: {} },
+                            { id: "g2_o2", label: "二技能结束时获得10%绝技能量", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "luban": {
+                name: "神匠/鲁班大师",
+                available: true,
+                type: "skill",
+                typeName: "技能类共鸣",
+                liuMai: { HP: 2190, EXTRA_ATK: 0.205, DEF: 960, FLOW_POWER: 0.104, FLOW_PENETRATE: 0.2 },
+                ningWu: { HP: 450, ATK: 760, CRIT_RATE: 0.19, FULL_FLOW: 0.157 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "机械翼连打获得额外暴击率，命中时八号能量提升", effect: { CRIT_RATE: 0.3 } },
+                            { id: "g1_o2", label: "强化普攻激光冲击获得额外暴击率，造成伤害时五号获得亢奋值", effect: { CRIT_RATE: 0.3 } }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "八号驾驶时间提升6秒", effect: {} },
+                            { id: "g2_o2", label: "流脉能量转换提供的护盾翻倍，链接结束后保持六秒", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "dongfangyao": {
+                name: "星辰之子/东方耀",
+                available: true,
+                type: "melee_normal",
+                typeName: "近战普攻类共鸣",
+                liuMai: { HP: 2190, EXTRA_ATK: 0.211, DEF: 960, CRIT_RATE: 0.088, FLOW_PENETRATE: 0.2 },
+                ningWu: { HP: 480, ATK: 800, CRIT_RATE: 0.147, CHASE: 0.173 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "空中获得20%暴击率，在空中每秒+10%暴击效果，最多40%", effect: { CRIT_RATE: 0.2, CRIT_DMG: 0.4 } },
+                            { id: "g1_o2", label: "强化普攻带震属性", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "施放飞星式后三技能替换为归尘闪回", effect: {} },
+                            { id: "g2_o2", label: "碎星和飞星提供绝技能量", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            },
+            "lengchun": {
+                name: "绯瞳刃舞/冷春",
+                available: true,
+                type: "melee_normal",
+                typeName: "近战普攻类共鸣",
+                liuMai: { HP: 2730, EXTRA_ATK: 0.211, DEF: 920, CHASE: 0.104, FLOW_PENETRATE: 0.2 },
+                ningWu: { HP: 500, ATK: 840, CHASE: 0.124, CRIT_DMG: 0.158 },
+                // 流脉切换选项
+                liuMaiOptions: {
+                    group1: {
+                        name: "流脉六",
+                        options: [
+                            { id: "g1_o1", label: "施放共流技后获得护盾", effect: {} },
+                            { id: "g1_o2", label: "目标血量越低，魔刹形态下三技能拔出血刃伤害越高", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    },
+                    group2: {
+                        name: "流脉十",
+                        options: [
+                            { id: "g2_o1", label: "获得护盾后浴血魔刹增益效果放大30%", effect: {} },
+                            { id: "g2_o2", label: "施放共流技后血量越低获得防御穿透越高，最多35%", effect: {} }
+                        ],
+                        defaultSelected: 0
+                    }
+                }
+            }
+        };
+
+        // 装备套装数据
+        const EQUIPMENT_SETS = {
+            tank: {
+                name: "对抗类",
+                sets: [
+                    { id: "wuling", name: "舞伶套装", effects: { DEF: 290, HP: 478, EXTRA_HP: 0.069, ATK: 36, EXTRA_ATK: 0.146, FLOW_RES: 0.032, CRIT_RATE: 0.087 }, bonus: { FULL_FLOW: 0.72 } },
+                    { id: "bazhe", name: "霸者套装", effects: { DEF: 290, EXTRA_DEF: 0.071, HP: 478, ATK: 36, EXTRA_ATK: 0.146, FLOW_RES: 0.032, FLOW_POWER: 0.102 }, bonus: { CRIT_RATE: 1 } },
+                    { id: "bihu", name: "庇护套装", effects: { DEF: 290, HP: 478, EXTRA_HP: 0.069, ATK: 36, EXTRA_ATK: 0.146, FLOW_RES: 0.032, FULL_FLOW: 0.042 }, bonus: { EXTRA_ATK: 1.8 } },
+                    { id: "ezhao", name: "噩兆套装", effects: { DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.219, FLOW_RES: 0.032, CHASE: 0.102 }, bonus: { CHASE: 0.8, EXTRA_ATK: 0.8 } }
+                ]
+            },
+            attack: {
+                name: "强攻类",
+                sets: [
+                    { id: "boxue", name: "博学套装", effects: { DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.219, FLOW_POWER: 0.102, BREAK_POWER: 0.109 }, bonus: { FLOW_POWER: 0.25 } },
+                    { id: "huadie", name: "化蝶套装", effects: { DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.219, FLOW_POWER: 0.102, BREAK_POWER: 0.109 }, bonus: { FLOW_POWER: 0.64, EQUIP_DMG: 0.48 } },
+                    { id: "nuhun", name: "怒魂套装", effects: { DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.219, CRIT_RATE: 0.087, BREAK_POWER: 0.109 }, bonus: { CRIT_RATE: 0.22, CRIT_DMG: 0.48 } },
+                    { id: "binghen", name: "冰痕套装", effects: { DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.219, CRIT_DMG: 0.13, BREAK_POWER: 0.109 }, bonus: { FLOW_POWER: 0.3, CHASE: 0.3, EQUIP_DMG: 0.4 } },
+                    { id: "baolie", name: "暴烈套装", effects: { DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.219, CHASE: 0.102, BREAK_POWER: 0.109 }, bonus: {} }
+                ]
+            },
+            support: {
+                name: "辅助类",
+                sets: [
+                    { id: "mofu", name: "魔女套装", effects: { EXTRA_DEF: 0.071, DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.146, FLOW_POWER: 0.102, CHARGE_EFF: 0.084 }, bonus: {} },
+                    { id: "xuri", name: "旭日套装", effects: { EXTRA_DEF: 0.071, DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.146, HEAL: 0.04, CRIT_RATE: 0.087 }, bonus: {} },
+                    { id: "shengshu", name: "圣树套装", effects: { EXTRA_DEF: 0.071, DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.146, CRIT_RATE: 0.087, CHARGE_EFF: 0.084 }, bonus: {} },
+                    { id: "tongku", name: "痛苦套装", effects: { EXTRA_DEF: 0.071, DEF: 290, HP: 478, ATK: 36, EXTRA_ATK: 0.146, HEAL: 0.04, FLOW_POWER: 0.102 }, bonus: {} }
+                ]
+            }
+        };
+
+        // 食物数据
+        const FOODS = {
+            "八级食物": { FULL_FLOW: 0.12, CRIT_DMG: 0.12 },
+            "拳拳烤肉串": { CHASE: 0.22, CHARGE_EFF: 0.12 },
+            "冰果糕": { ATK: 110, CRIT_DMG: 0.12 },
+            "又逢春": { CRIT_RATE: 0.15, CHARGE_EFF: 0.12 },
+            "油仙拔丝薯": { FLOW_POWER: 0.22 },
+            "弹跳嫩豆花": { HEAL: 0.12, FULL_FLOW: 0.05 },
+            "益夏补气汤": { HEAL: 0.18 },
+            "丰云羹": { CHARGE_EFF: 0.3 },
+            "厨神馒头": { EXTRA_DEF: 0.44 },
+            "盐焗云中鹤": { ATK: 110 },
+            "无骨仙尾汤": { BREAK_POWER: 0.25 },
+            "西施粥": { EXTRA_HP: 0.18 }
+        };
+
+        // 食物图标
+        const FOOD_ICONS = {
+            "八级食物": "⭐",
+            "拳拳烤肉串": "🍢",
+            "冰果糕": "🍧",
+            "又逢春": "🌸",
+            "油仙拔丝薯": "🍠",
+            "弹跳嫩豆花": "🫘",
+            "益夏补气汤": "🍵",
+            "丰云羹": "🥣",
+            "厨神馒头": "🥟",
+            "盐焗云中鹤": "🍗",
+            "无骨仙尾汤": "🍲",
+            "西施粥": "🥣"
+        };
+
+        // 铭文数据
+        const INSIGNIAS = {
+            red: [
+                { name: "传承", EXTRA_ATK: 0.022, CRIT_RATE: 0.056, FLOW_POWER: 0.024 },
+                { name: "噩兆", EXTRA_ATK: 0.026, CRIT_RATE: 0.051, CHASE: 0.024 },
+                { name: "纷争", EXTRA_ATK: 0.022, CRIT_RATE: 0.056, FULL_FLOW: 0.017 },
+                { name: "无双", CRIT_RATE: 0.055, CRIT_DMG: 0.055 },
+                { name: "红月", EXTRA_ATK: 0.022, BRAVE: 0.009, CHARGE_EFF: 0.082 },
+                { name: "梦魇", EXTRA_ATK: 0.046, BREAK_POWER: 0.092 },
+                { name: "溃阵", EXTRA_ATK: 0.022, CRIT_DMG: 0.091, FLOW_POWER: 0.018 },
+                { name: "炽阳", EXTRA_ATK: 0.022, CRIT_DMG: 0.084, FULL_FLOW: 0.017 },
+                { name: "极尽", EXTRA_ATK: 0.026, CRIT_DMG: 0.068, CHASE: 0.03 },
+                { name: "祸源", EXTRA_ATK: 0.046, HEAL: 0.014 },
+                { name: "宿命", EXTRA_ATK: 0.022, HEAL: 0.009, CHARGE_EFF: 0.082 },
+                { name: "异变", EXTRA_ATK: 0.026, BREAK_POWER: 0.064, CHARGE_EFF: 0.074 }
+            ],
+            blue: [
+                { name: "狩猎", EXTRA_HP: 0.016, CRIT_RATE: 0.015, FLOW_POWER: 0.072 },
+                { name: "冥想", EXTRA_HP: 0.019, CRIT_DMG: 0.031, FLOW_POWER: 0.059 },
+                { name: "调和", EXTRA_HP: 0.016, FLOW_POWER: 0.059, CHARGE_EFF: 0.041 },
+                { name: "兽痕", EXTRA_HP: 0.034, BREAK_POWER: 0.092 },
+                { name: "汹涌", EXTRA_HP: 0.034, BRAVE: 0.014 },
+                { name: "隐匿", EXTRA_HP: 0.016, CRIT_RATE: 0.025, CHASE: 0.059 },
+                { name: "夺萃", EXTRA_HP: 0.016, CRIT_DMG: 0.031, CHASE: 0.065 },
+                { name: "繁荣", EXTRA_HP: 0.019, CRIT_RATE: 0.025, FULL_FLOW: 0.037 },
+                { name: "轮回", EXTRA_HP: 0.016, CRIT_DMG: 0.031, FULL_FLOW: 0.046 },
+                { name: "奔腾", EXTRA_HP: 0.016, FULL_FLOW: 0.05, CHARGE_EFF: 0.025 },
+                { name: "长生", EXTRA_HP: 0.034, HEAL: 1.4 },
+                { name: "贪婪", EXTRA_HP: 0.016, CHARGE_EFF: 0.025, CHASE: 0.072 }
+            ],
+            green: [
+                { name: "崩岩", EXTRA_DEF: 0.016, FLOW_POWER: 0.024, BRAVE: 0.022 },
+                { name: "息壤", EXTRA_DEF: 0.02, BRAVE: 0.017, FULL_FLOW: 0.021 },
+                { name: "均衡", BREAK_POWER: 0.092, BRAVE: 0.021 },
+                { name: "怜悯", EXTRA_DEF: 0.036, CRIT_RATE: 0.036 },
+                { name: "敬畏", EXTRA_DEF: 0.02, CHASE: 0.024, BREAK_POWER: 0.127 },
+                { name: "心眼", EXTRA_DEF: 0.016, FLOW_POWER: 0.024, BREAK_POWER: 0.14 },
+                { name: "回声", EXTRA_DEF: 0.016, BREAK_POWER: 0.14, FULL_FLOW: 0.017 },
+                { name: "虚空", EXTRA_DEF: 0.016, FLOW_POWER: 0.03, HEAL: 0.018 },
+                { name: "蛰雷", EXTRA_DEF: 0.02, CHASE: 0.024, BRAVE: 0.019 },
+                { name: "鹰眼", EXTRA_DEF: 0.036, CHARGE_EFF: 0.059 },
+                { name: "复苏", EXTRA_DEF: 0.016, CHASE: 0.03, HEAL: 0.018 },
+                { name: "霸者", EXTRA_DEF: 0.016, CHARGE_EFF: 0.041, HEAL: 0.018 }
+            ]
+        };
+
+        // 优化模式
+        const OPTIMIZE_MODES = [
+            { id: "damage", name: "伤害优先" },
+            { id: "final_atk", name: "最终攻击力优先" },
+            { id: "final_def", name: "最终防御力优先" },
+            { id: "final_hp", name: "最终生命值优先" },
+            { id: "crit_dmg_product", name: "暴击率*暴击效果优先" },
+            { id: "crit_rate", name: "暴击率优先" },
+            { id: "chase", name: "追击率优先" },
+            { id: "flow_power", name: "流技强度优先" },
+            { id: "break_power", name: "破势强度优先" },
+            { id: "full_flow", name: "全流强度优先" },
+            { id: "charge_eff", name: "绝技充能效率优先" },
+            { id: "heal", name: "治愈强度优先" }
+        ];
+
+        // 固定属性
+        const FIXED_STATS = {
+            FINAL_DMG: 0.48,
+            EQUIP_DMG: 0.64,
+            VULN: 0.5,
+            FLOW_RES: 0,
+            BRAVE: 0
+        };
+
+        // ============== 状态管理 ==============
+        let selectedCharacter = null;
+        let selectedEquipment = null;
+        let currentMode = "damage";
+        let fixedFood = null; // 固定食物搜索时使用
+        let selectedLiuMaiOptions = {}; // 流脉切换选择 { groupId: optionIndex }
+
+        // ============== 初始化 ==============
+        function init() {
+            renderCharacters();
+            renderEquipment();
+            renderModes();
+            initCustomConfig();
+            initFixedFoodSelection();
+        }
+
+        function renderCharacters() {
+            const grid = document.getElementById('characterGrid');
+            grid.innerHTML = '';
+            
+            for (const [id, char] of Object.entries(CHARACTERS)) {
+                const div = document.createElement('div');
+                div.className = `character-item ${char.available ? '' : 'disabled'}`;
+                div.innerHTML = `
+                    <div class="character-name">${char.name}</div>
+                    <div class="character-type ${char.type}">${char.available ? char.typeName : '暂不可用'}</div>
+                `;
+                if (char.available) {
+                    div.onclick = () => selectCharacter(id);
+                }
+                grid.appendChild(div);
+            }
+        }
+
+        function renderEquipment() {
+            const section = document.getElementById('equipmentSection');
+            section.innerHTML = '';
+
+            for (const [catId, cat] of Object.entries(EQUIPMENT_SETS)) {
+                const div = document.createElement('div');
+                div.className = 'equipment-category';
+                div.innerHTML = `
+                    <div class="category-title ${catId}">${cat.name}</div>
+                    <div class="equipment-grid">
+                        ${cat.sets.map(set => `
+                            <div class="equipment-item" id="equip-${set.id}" onclick="selectEquipment('${set.id}')">
+                                <div class="equipment-name">${set.name}</div>
+                                <div class="equipment-bonus">${Object.keys(set.bonus).length > 0 ? '有额外效果' : '无额外效果'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                section.appendChild(div);
+            }
+        }
+
+        function renderModes() {
+            const grid = document.getElementById('modeGrid');
+            grid.innerHTML = OPTIMIZE_MODES.map(mode => `
+                <button class="mode-btn ${mode.id === currentMode ? 'active' : ''}" 
+                        onclick="selectMode('${mode.id}')">${mode.name}</button>
+            `).join('');
+        }
+
+        // ============== 选择处理 ==============
+        function selectCharacter(id) {
+            selectedCharacter = CHARACTERS[id];
+            
+            // 更新UI
+            document.querySelectorAll('.character-item').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            // 花木兰特殊提示
+            const huanmulanNotice = document.getElementById('huanmulanNotice');
+            if (huanmulanNotice) {
+                huanmulanNotice.style.display = id === 'huanmulan' ? 'block' : 'none';
+            }
+            
+            // 渲染流脉切换选项
+            renderLiuMaiOptions();
+            
+            // 显示基础属性
+            const stats = getBaseStats();
+            document.getElementById('baseStatsDisplay').style.display = 'grid';
+            document.getElementById('statHP').textContent = formatNumber(stats.baseHP || stats.HP);
+            document.getElementById('statATK').textContent = formatNumber(stats.baseATK || stats.ATK);
+            document.getElementById('statDEF').textContent = formatNumber(stats.baseDEF || stats.DEF);
+            document.getElementById('statCritRate').textContent = formatPercent(stats.CRIT_RATE);
+            document.getElementById('statCritDmg').textContent = stats.CRIT_DMG.toFixed(3);
+            document.getElementById('statFlowPower').textContent = formatPercent(stats.FLOW_POWER);
+            document.getElementById('statFullFlow').textContent = formatPercent(stats.FULL_FLOW);
+            document.getElementById('statChase').textContent = formatPercent(stats.CHASE);
+            document.getElementById('statExtraATK').textContent = formatPercent(stats.EXTRA_ATK);
+            
+            updateConfigPreview();
+        }
+        
+        // 渲染流脉切换选项
+        function renderLiuMaiOptions() {
+            const section = document.getElementById('liumaiOptionsSection');
+            const container = document.getElementById('liumaiOptionsContainer');
+            
+            if (!selectedCharacter || !selectedCharacter.liuMaiOptions) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            selectedLiuMaiOptions = {};
+            
+            const options = selectedCharacter.liuMaiOptions;
+            let html = '';
+            let groupIdx = 0;
+            const groupIds = Object.keys(options);
+            
+            for (const [groupId, group] of Object.entries(options)) {
+                // 初始化默认选择
+                selectedLiuMaiOptions[groupIdx] = group.defaultSelected || 0;
+                
+                html += '<div class="liumai-option-group" data-idx="' + groupIdx + '"><div class="liumai-group-name">' + group.name + '</div>';
+                
+                group.options.forEach((opt, idx) => {
+                    const effectText = Object.keys(opt.effect).length > 0 
+                        ? '属性: ' + Object.entries(opt.effect).map(([k, v]) => k + ' +' + (v * 100).toFixed(1) + '%').join(', ')
+                        : '无属性变化';
+                    const isSelected = idx === selectedLiuMaiOptions[groupIdx];
+                    const itemClass = isSelected ? 'liumai-option-btn selected' : 'liumai-option-btn';
+                    html += '<div class="' + itemClass + '" data-group="' + groupIdx + '" data-option="' + idx + '">' +
+                        '<div class="liumai-option-btn-label">' + opt.label + '</div>' +
+                        '<div class="liumai-option-btn-effect">' + effectText + '</div>' +
+                        '</div>';
+                });
+                
+                html += '</div>';
+                groupIdx++;
+            }
+            
+            container.innerHTML = html;
+            
+            // 绑定点击事件
+            container.querySelectorAll('.liumai-option-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const g = parseInt(this.dataset.group);
+                    const o = parseInt(this.dataset.option);
+                    selectLiuMaiOption(g, o);
+                });
+            });
+        }
+        
+        // 选择流脉切换选项
+        function selectLiuMaiOption(groupIdx, optionIndex) {
+            selectedLiuMaiOptions[groupIdx] = optionIndex;
+            
+            // 更新UI - 使用data-idx属性直接查找
+            const group = document.querySelector('.liumai-option-group[data-idx="' + groupIdx + '"]');
+            if (group) {
+                const items = group.querySelectorAll('.liumai-option-btn');
+                items.forEach((item, idx) => {
+                    item.classList.toggle('selected', idx === optionIndex);
+                });
+            }
+            
+            // 更新属性显示
+            const stats = getBaseStats();
+            document.getElementById('statHP').textContent = formatNumber(stats.baseHP || stats.HP);
+            document.getElementById('statATK').textContent = formatNumber(stats.baseATK || stats.ATK);
+            document.getElementById('statDEF').textContent = formatNumber(stats.baseDEF || stats.DEF);
+            document.getElementById('statCritRate').textContent = formatPercent(stats.CRIT_RATE);
+            document.getElementById('statCritDmg').textContent = stats.CRIT_DMG.toFixed(3);
+            document.getElementById('statFlowPower').textContent = formatPercent(stats.FLOW_POWER);
+            document.getElementById('statFullFlow').textContent = formatPercent(stats.FULL_FLOW);
+            document.getElementById('statChase').textContent = formatPercent(stats.CHASE);
+            document.getElementById('statExtraATK').textContent = formatPercent(stats.EXTRA_ATK);
+            
+            updateConfigPreview();
+        }
+
+        function selectEquipment(id) {
+            // 找到装备
+            for (const cat of Object.values(EQUIPMENT_SETS)) {
+                const set = cat.sets.find(s => s.id === id);
+                if (set) {
+                    selectedEquipment = set;
+                    
+                    // 更新UI
+                    document.querySelectorAll('.equipment-item').forEach(el => el.classList.remove('selected'));
+                    document.getElementById(`equip-${id}`).classList.add('selected');
+                    
+                    updateConfigPreview();
+                    return;
+                }
+            }
+        }
+
+        function selectMode(id) {
+            currentMode = id;
+            renderModes();
+        }
+
+        function getConstraints() {
+            const constraints = {};
+            
+            // 百分数字段，需要除以100转换为小数
+            const percentFields = ['critRate', 'critDmg', 'flowPower', 'fullFlow', 'chase', 'breakPower', 'heal', 'chargeEff', 'extraATK'];
+            
+            const constraintFields = [
+                { id: 'con_final_atk_min', maxId: 'con_final_atk_max', key: 'finalATK' },
+                { id: 'con_final_def_min', maxId: 'con_final_def_max', key: 'finalDEF' },
+                { id: 'con_final_hp_min', maxId: 'con_final_hp_max', key: 'finalHP' },
+                { id: 'con_crit_rate_min', maxId: 'con_crit_rate_max', key: 'critRate' },
+                { id: 'con_crit_dmg_min', maxId: 'con_crit_dmg_max', key: 'critDmg' },
+                { id: 'con_flow_power_min', maxId: 'con_flow_power_max', key: 'flowPower' },
+                { id: 'con_full_flow_min', maxId: 'con_full_flow_max', key: 'fullFlow' },
+                { id: 'con_chase_min', maxId: 'con_chase_max', key: 'chase' },
+                { id: 'con_break_power_min', maxId: 'con_break_power_max', key: 'breakPower' },
+                { id: 'con_heal_min', maxId: 'con_heal_max', key: 'heal' },
+                { id: 'con_charge_eff_min', maxId: 'con_charge_eff_max', key: 'chargeEff' },
+                { id: 'con_extra_atk_min', maxId: 'con_extra_atk_max', key: 'extraATK' }
+            ];
+            
+            for (const field of constraintFields) {
+                let minVal = parseFloat(document.getElementById(field.id).value);
+                let maxVal = parseFloat(document.getElementById(field.maxId).value);
+                
+                // 百分数字段需要除以100
+                if (percentFields.includes(field.key)) {
+                    if (!isNaN(minVal)) minVal = minVal / 100;
+                    if (!isNaN(maxVal)) maxVal = maxVal / 100;
+                }
+                
+                if (!isNaN(minVal) || !isNaN(maxVal)) {
+                    constraints[field.key] = {
+                        min: isNaN(minVal) ? -Infinity : minVal,
+                        max: isNaN(maxVal) ? Infinity : maxVal
+                    };
+                }
+            }
+            
+            return Object.keys(constraints).length > 0 ? constraints : null;
+        }
+
+        function resetConstraints() {
+            const constraintFields = [
+                'con_final_atk_min', 'con_final_atk_max',
+                'con_final_def_min', 'con_final_def_max',
+                'con_final_hp_min', 'con_final_hp_max',
+                'con_crit_rate_min', 'con_crit_rate_max',
+                'con_crit_dmg_min', 'con_crit_dmg_max',
+                'con_flow_power_min', 'con_flow_power_max',
+                'con_full_flow_min', 'con_full_flow_max',
+                'con_chase_min', 'con_chase_max',
+                'con_break_power_min', 'con_break_power_max',
+                'con_heal_min', 'con_heal_max',
+                'con_charge_eff_min', 'con_charge_eff_max',
+                'con_extra_atk_min', 'con_extra_atk_max'
+            ];
+            
+            for (const fieldId of constraintFields) {
+                document.getElementById(fieldId).value = '';
+            }
+        }
+
+        function checkConstraints(result, constraints) {
+            if (!constraints) return true;
+            
+            for (const [key, range] of Object.entries(constraints)) {
+                const value = result[key];
+                if (value === undefined) continue;
+                
+                if (value < range.min || value > range.max) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // ============== 属性计算 ==============
+        function getBaseStats() {
+            const base = { ...YUANLIU_BASE };
+            
+            // 初始化基础属性（仅来自角色基础、流脉、凝武、装备）
+            base.baseATK = YUANLIU_BASE.ATK || 0;
+            base.baseHP = YUANLIU_BASE.HP || 0;
+            base.baseDEF = YUANLIU_BASE.DEF || 0;
+            
+            // 添加流脉属性
+            if (selectedCharacter && selectedCharacter.liuMai) {
+                const lm = selectedCharacter.liuMai;
+                if (lm.HP) base.baseHP += lm.HP;
+                if (lm.ATK) base.baseATK += lm.ATK;
+                if (lm.DEF) base.baseDEF += lm.DEF;
+                if (lm.CRIT_RATE) base.CRIT_RATE = (base.CRIT_RATE || 0) + lm.CRIT_RATE;
+                if (lm.CRIT_DMG) base.CRIT_DMG = (base.CRIT_DMG || 0) + lm.CRIT_DMG;
+                if (lm.FLOW_POWER) base.FLOW_POWER = (base.FLOW_POWER || 0) + lm.FLOW_POWER;
+                if (lm.FULL_FLOW) base.FULL_FLOW = (base.FULL_FLOW || 0) + lm.FULL_FLOW;
+                if (lm.CHASE) base.CHASE = (base.CHASE || 0) + lm.CHASE;
+                if (lm.EXTRA_ATK) base.EXTRA_ATK = (base.EXTRA_ATK || 0) + lm.EXTRA_ATK;
+                if (lm.HEAL) base.HEAL = (base.HEAL || 0) + lm.HEAL;
+                if (lm.CHARGE_EFF) base.CHARGE_EFF = (base.CHARGE_EFF || 0) + lm.CHARGE_EFF;
+                if (lm.BREAK_POWER) base.BREAK_POWER = (base.BREAK_POWER || 0) + lm.BREAK_POWER;
+                if (lm.FLOW_PENETRATE) base.FLOW_PENETRATE = (base.FLOW_PENETRATE || 0) + lm.FLOW_PENETRATE;
+                if (lm.DEF_PCT) base.DEF_PCT = (base.DEF_PCT || 0) + lm.DEF_PCT;
+                if (lm.EXTRA_DEF) base.EXTRA_DEF = (base.EXTRA_DEF || 0) + lm.EXTRA_DEF;
+                if (lm.EXTRA_HP) base.EXTRA_HP = (base.EXTRA_HP || 0) + lm.EXTRA_HP;
+            }
+            
+            // 添加流脉切换选项属性
+            if (selectedCharacter && selectedCharacter.liuMaiOptions) {
+                const liuMaiKeys = Object.keys(selectedCharacter.liuMaiOptions);
+                for (const [groupIdx, optionIndex] of Object.entries(selectedLiuMaiOptions)) {
+                    const groupId = liuMaiKeys[parseInt(groupIdx)];
+                    const group = selectedCharacter.liuMaiOptions[groupId];
+                    if (group && group.options && group.options[optionIndex]) {
+                        const effect = group.options[optionIndex].effect;
+                        for (const [key, value] of Object.entries(effect)) {
+                            if (value) base[key] = (base[key] || 0) + value;
+                        }
+                    }
+                }
+            }
+            
+            // 添加凝武属性
+            if (selectedCharacter && selectedCharacter.ningWu) {
+                const nw = selectedCharacter.ningWu;
+                if (nw.HP) base.baseHP += nw.HP;
+                if (nw.ATK) base.baseATK += nw.ATK;
+                if (nw.DEF) base.baseDEF += nw.DEF;
+                if (nw.CRIT_RATE) base.CRIT_RATE = (base.CRIT_RATE || 0) + nw.CRIT_RATE;
+                if (nw.CRIT_DMG) base.CRIT_DMG = (base.CRIT_DMG || 0) + nw.CRIT_DMG;
+                if (nw.FLOW_POWER) base.FLOW_POWER = (base.FLOW_POWER || 0) + nw.FLOW_POWER;
+                if (nw.FULL_FLOW) base.FULL_FLOW = (base.FULL_FLOW || 0) + nw.FULL_FLOW;
+                if (nw.CHASE) base.CHASE = (base.CHASE || 0) + nw.CHASE;
+                if (nw.EXTRA_ATK) base.EXTRA_ATK = (base.EXTRA_ATK || 0) + nw.EXTRA_ATK;
+                if (nw.HEAL) base.HEAL = (base.HEAL || 0) + nw.HEAL;
+                if (nw.CHARGE_EFF) base.CHARGE_EFF = (base.CHARGE_EFF || 0) + nw.CHARGE_EFF;
+                if (nw.BREAK_POWER) base.BREAK_POWER = (base.BREAK_POWER || 0) + nw.BREAK_POWER;
+                if (nw.DEF_PCT) base.DEF_PCT = (base.DEF_PCT || 0) + nw.DEF_PCT;
+                if (nw.EXTRA_DEF) base.EXTRA_DEF = (base.EXTRA_DEF || 0) + nw.EXTRA_DEF;
+                if (nw.EXTRA_HP) base.EXTRA_HP = (base.EXTRA_HP || 0) + nw.EXTRA_HP;
+            }
+            
+            // 添加装备属性（装备提供的HP、ATK、DEF作为基础属性的一部分）
+            if (selectedEquipment) {
+                const eq = selectedEquipment.effects;
+                if (eq.HP) base.baseHP += eq.HP;
+                if (eq.ATK) base.baseATK += eq.ATK;
+                if (eq.DEF) base.baseDEF += eq.DEF;
+                if (eq.CRIT_RATE) base.CRIT_RATE = (base.CRIT_RATE || 0) + eq.CRIT_RATE;
+                if (eq.CRIT_DMG) base.CRIT_DMG = (base.CRIT_DMG || 0) + eq.CRIT_DMG;
+                if (eq.FLOW_POWER) base.FLOW_POWER = (base.FLOW_POWER || 0) + eq.FLOW_POWER;
+                if (eq.FULL_FLOW) base.FULL_FLOW = (base.FULL_FLOW || 0) + eq.FULL_FLOW;
+                if (eq.CHASE) base.CHASE = (base.CHASE || 0) + eq.CHASE;
+                if (eq.EXTRA_ATK) base.EXTRA_ATK = (base.EXTRA_ATK || 0) + eq.EXTRA_ATK;
+                if (eq.HEAL) base.HEAL = (base.HEAL || 0) + eq.HEAL;
+                if (eq.CHARGE_EFF) base.CHARGE_EFF = (base.CHARGE_EFF || 0) + eq.CHARGE_EFF;
+                if (eq.BREAK_POWER) base.BREAK_POWER = (base.BREAK_POWER || 0) + eq.BREAK_POWER;
+                if (eq.EXTRA_DEF) base.EXTRA_DEF = (base.EXTRA_DEF || 0) + eq.EXTRA_DEF;
+                if (eq.EXTRA_HP) base.EXTRA_HP = (base.EXTRA_HP || 0) + eq.EXTRA_HP;
+                
+                // 装备额外效果
+                if (selectedEquipment.bonus) {
+                    for (const [key, val] of Object.entries(selectedEquipment.bonus)) {
+                        base[key] = (base[key] || 0) + val;
+                    }
+                }
+            }
+            
+            // 添加固定属性
+            for (const [key, val] of Object.entries(FIXED_STATS)) {
+                base[key] = (base[key] || 0) + val;
+            }
+            
+            // 初始化默认值
+            base.FLOW_POWER = base.FLOW_POWER || 0;
+            base.FULL_FLOW = base.FULL_FLOW || 0;
+            base.CHASE = base.CHASE || 0;
+            base.EXTRA_ATK = base.EXTRA_ATK || 0;
+            base.HEAL = base.HEAL || 0;
+            base.CHARGE_EFF = base.CHARGE_EFF || 0;
+            base.BREAK_POWER = base.BREAK_POWER || 0;
+            base.EXTRA_DEF = base.EXTRA_DEF || 0;
+            base.EXTRA_HP = base.EXTRA_HP || 0;
+            base.FINAL_DMG = base.FINAL_DMG || 0;
+            
+            return base;
+        }
+
+        function calculateDamage(baseStats, food, red, blue, green) {
+            // 应用铭文加成
+            const stats = { ...baseStats };
+            
+            for (const insig of red) {
+                for (const key in insig) {
+                    if (key !== 'name' && stats.hasOwnProperty(key)) {
+                        stats[key] += insig[key];
+                    }
+                }
+            }
+            for (const insig of blue) {
+                for (const key in insig) {
+                    if (key !== 'name' && stats.hasOwnProperty(key)) {
+                        stats[key] += insig[key];
+                    }
+                }
+            }
+            for (const insig of green) {
+                for (const key in insig) {
+                    if (key !== 'name' && stats.hasOwnProperty(key)) {
+                        stats[key] += insig[key];
+                    }
+                }
+            }
+            
+            // 食物加成（单独加数）
+            let foodATK = 0;
+            let foodHP = 0;
+            let foodDEF = 0;
+            
+            // 应用食物加成（攻击力、生命值、防御力作为单独加数，其他属性累加）
+            if (food && FOODS[food]) {
+                for (const key in FOODS[food]) {
+                    if (key === 'ATK') {
+                        foodATK = FOODS[food][key];
+                    } else if (key === 'HP') {
+                        foodHP = FOODS[food][key];
+                    } else if (key === 'DEF') {
+                        foodDEF = FOODS[food][key];
+                    } else if (stats.hasOwnProperty(key)) {
+                        stats[key] += FOODS[food][key];
+                    }
+                }
+            }
+            
+            // 计算最终属性
+            // 最终攻击力 = 基础攻击力 * (1 + 额外攻击力百分比) + 食物攻击力
+            // 最终生命值 = 基础生命值 * (1 + 额外生命值百分比) + 食物生命值
+            // 最终防御力 = 基础防御力 * (1 + 额外防御力百分比) + 食物防御力
+            const baseATK = stats.baseATK || stats.ATK || 0;
+            const baseHP = stats.baseHP || stats.HP || 0;
+            const baseDEF = stats.baseDEF || stats.DEF || 0;
+            const finalATK = baseATK * (1 + (stats.EXTRA_ATK || 0)) + foodATK;
+            const finalHP = baseHP * (1 + (stats.EXTRA_HP || 0)) + foodHP;
+            const finalDEF = baseDEF * (1 + (stats.EXTRA_DEF || 0)) + foodDEF;
+            
+            const critRate = Math.min(stats.CRIT_RATE || 0, 1);
+            const critDmg = stats.CRIT_DMG || 0.5;
+            const flowPower = stats.FLOW_POWER || 0;
+            const fullFlow = stats.FULL_FLOW || 0;
+            const chase = stats.CHASE || 0;
+            const finalDmg = stats.FINAL_DMG || 0;
+            const equipDmg = stats.EQUIP_DMG || 0;
+            const vuln = stats.VULN || 0;
+            const brave = stats.BRAVE || 0;
+            
+            let damage;
+            
+            if (selectedCharacter) {
+                switch (selectedCharacter.type) {
+                    case 'normal': // 普攻类
+                        damage = finalATK * (1 + critRate * critDmg) * (1 + chase) * (1 + fullFlow) * (1 + finalDmg) * (1 + equipDmg) * (1 + vuln);
+                        break;
+                    case 'melee': // 近战类
+                        damage = finalATK * (1 + critRate * critDmg) * (1 + flowPower) * (1 + fullFlow) * (1 + finalDmg) * (1 + brave + equipDmg) * (1 + vuln);
+                        break;
+                    case 'skill': // 技能类
+                        damage = finalATK * (1 + critRate * critDmg) * (1 + flowPower) * (1 + fullFlow) * (1 + finalDmg) * (1 + equipDmg) * (1 + vuln);
+                        break;
+                    case 'melee_normal': // 近战普攻类
+                        damage = finalATK * (1 + critRate * critDmg) * (1 + chase) * (1 + fullFlow) * (1 + finalDmg) * (1 + brave + equipDmg) * (1 + vuln);
+                        break;
+                    default:
+                        damage = finalATK * (1 + critRate * critDmg) * (1 + flowPower) * (1 + fullFlow) * (1 + finalDmg) * (1 + equipDmg) * (1 + vuln);
+                }
+            } else {
+                // 默认使用近战类公式
+                damage = finalATK * (1 + critRate * critDmg) * (1 + flowPower) * (1 + fullFlow) * (1 + finalDmg) * (1 + brave + equipDmg) * (1 + vuln);
+            }
+            
+            return {
+                damage,
+                finalATK,
+                finalDEF,
+                finalHP,
+                critRate,
+                critDmg,
+                critDmgProduct: critRate * critDmg,
+                flowPower,
+                fullFlow,
+                chase,
+                heal: stats.HEAL || 0,
+                chargeEff: stats.CHARGE_EFF || 0,
+                breakPower: stats.BREAK_POWER || 0,
+                extraATK: stats.EXTRA_ATK || 0
+            };
+        }
+
+        // ============== 搜索算法 ==============
+        // 全局模式评分函数
+        function getModeScore(result) {
+            switch (currentMode) {
+                case 'damage':
+                    return result.damage;
+                case 'final_atk':
+                    return result.finalATK * 10 + result.damage * 0.5;
+                case 'final_def':
+                    return result.finalDEF * 10 + result.damage * 0.3;
+                case 'final_hp':
+                    return result.finalHP * 5 + result.damage * 0.3;
+                case 'crit_dmg_product':
+                    return result.critDmgProduct * 100000 + result.damage * 0.5;
+                case 'crit_rate':
+                    return result.critRate * 100000 + result.damage * 0.5;
+                case 'chase':
+                    return result.chase * 100000 + result.damage * 0.5;
+                case 'flow_power':
+                    return result.flowPower * 50000 + result.damage * 0.5;
+                case 'break_power':
+                    return result.breakPower * 100000 + result.damage * 0.5;
+                case 'full_flow':
+                    return result.fullFlow * 100000 + result.damage * 0.5;
+                case 'charge_eff':
+                    return result.chargeEff * 100000 + result.damage * 0.5;
+                case 'heal':
+                    return result.heal * 100000 + result.damage * 0.5;
+                default:
+                    return result.damage;
+            }
+        }
+        
+        function smartSearch(iterations = 5000000) {
+            const results = [];
+            const seen = new Set();
+            const baseStats = getBaseStats();
+            const constraints = getConstraints();
+            
+            // 获取固定食物或随机选择
+            const getFoodChoice = () => fixedFood || randomChoice(Object.keys(FOODS));
+            const getFoodsToSearch = () => fixedFood ? [fixedFood] : Object.keys(FOODS);
+            
+            function configKey(red, blue, green, food) {
+                const redTup = red.map(i => i.name).sort().join(',');
+                const blueTup = blue.map(i => i.name).sort().join(',');
+                const greenTup = green.map(i => i.name).sort().join(',');
+                return `${redTup}|${blueTup}|${greenTup}|${food}`;
+            }
+            
+            function randomChoice(arr) {
+                return arr[Math.floor(Math.random() * arr.length)];
+            }
+            
+            function randomInsignias(insignias, count) {
+                return Array(count).fill(null).map(() => randomChoice(insignias));
+            }
+            
+            // 评估函数：满足约束则返回结果（不返回null，让外部过滤）
+            function evaluateWithConstraints(red, blue, green, food) {
+                const result = calculateDamage(baseStats, food, red, blue, green);
+                return {
+                    ...result,
+                    red: [...red],
+                    blue: [...blue],
+                    green: [...green],
+                    food
+                };
+            }
+            
+            // 评估函数：严格约束检查
+            function evaluate(red, blue, green, food) {
+                const result = calculateDamage(baseStats, food, red, blue, green);
+                
+                // 约束检查 - 不满足约束则返回null
+                if (constraints && !checkConstraints(result, constraints)) {
+                    return null;
+                }
+                
+                return {
+                    ...result,
+                    red: [...red],
+                    blue: [...blue],
+                    green: [...green],
+                    food
+                };
+            }
+            
+            // 宽松评估：在约束范围内但不过滤（用于探索更多样化的方案）
+            function evaluateLoose(red, blue, green, food) {
+                const result = calculateDamage(baseStats, food, red, blue, green);
+                
+                // 宽松约束检查：稍微超出范围也接受
+                if (constraints) {
+                    for (const [key, range] of Object.entries(constraints)) {
+                        const value = result[key];
+                        if (value === undefined) continue;
+                        
+                        // 超出范围10%以内仍然接受
+                        const margin = (range.max - range.min) * 0.1 || 0.1;
+                        if (value < range.min - margin || value > range.max + margin) {
+                            return null;
+                        }
+                    }
+                }
+                
+                return {
+                    ...result,
+                    red: [...red],
+                    blue: [...blue],
+                    green: [...green],
+                    food
+                };
+            }
+            
+            // 智能排序函数：优先按伤害排序，约束属性作为次要参考
+            function sortResults(results) {
+                return results.sort((a, b) => {
+                    // 主要排序：按伤害（或模式评分）
+                    const scoreA = getModeScore(a);
+                    const scoreB = getModeScore(b);
+                    if (scoreA !== scoreB) {
+                        return scoreB - scoreA; // 从高到低
+                    }
+                    
+                    // 如果伤害相同，有约束时按约束的宽松程度排序（越宽松越好，给更多样化方案机会）
+                    if (constraints) {
+                        for (const key of Object.keys(constraints)) {
+                            const range = constraints[key];
+                            const aVal = a[key] !== undefined ? a[key] : 0;
+                            bVal = b[key] !== undefined ? b[key] : 0;
+                            // 计算每个方案距离约束中点的距离，距离中点越远说明越极端
+                            const aDist = Math.abs(aVal - (range.min + range.max) / 2);
+                            const bDist = Math.abs(bVal - (range.min + range.max) / 2);
+                            // 优先选择更接近中点的方案（更平衡）
+                            return aDist - bDist;
+                        }
+                    }
+                    
+                    return 0;
+                });
+            }
+            
+            // ========== 通用约束优化搜索 ==========
+            
+            // 定义每种属性对应的铭文排序函数
+            const STAT_SORTERS = {
+                critRate: (a, b) => (b.CRIT_RATE || 0) - (a.CRIT_RATE || 0),
+                critDmg: (a, b) => (b.CRIT_DMG || 0) - (a.CRIT_DMG || 0),
+                flowPower: (a, b) => (b.FLOW_POWER || 0) - (a.FLOW_POWER || 0),
+                fullFlow: (a, b) => (b.FULL_FLOW || 0) - (a.FULL_FLOW || 0),
+                chase: (a, b) => (b.CHASE || 0) - (a.CHASE || 0),
+                breakPower: (a, b) => (b.BREAK_POWER || 0) - (a.BREAK_POWER || 0),
+                heal: (a, b) => (b.HEAL || 0) - (a.HEAL || 0),
+                chargeEff: (a, b) => (b.CHARGE_EFF || 0) - (a.CHARGE_EFF || 0),
+                extraATK: (a, b) => (b.EXTRA_ATK || 0) - (a.EXTRA_ATK || 0)
+            };
+            
+            // 获取某属性最高的前N个铭文
+            function getTopStatInsignias(zone, statKey, count = 8) {
+                const sorter = STAT_SORTERS[statKey];
+                if (!sorter) return INSIGNIAS[zone];
+                return [...INSIGNIAS[zone]].sort(sorter).slice(0, count);
+            }
+            
+            // 获取所有有该属性的铭文
+            function getAllStatInsignias(zone, statKey) {
+                return [...INSIGNIAS[zone]].filter(i => (i[statKey.replace(/([A-Z])/g, '_$1').toUpperCase()] || 0) > 0);
+            }
+            
+            // 获取高暴击率铭文列表（按暴击率降序）- 兼容旧代码
+            function getHighCritInsignias(zone) {
+                return [...INSIGNIAS[zone]].sort(STAT_SORTERS.critRate);
+            }
+            
+            // 获取暴击率最高的铭文
+            function getTopCritInsignias(zone, count = 6) {
+                return getHighCritInsignias(zone).slice(0, count);
+            }
+            
+            // 贪心初始化 - 根据约束类型优先选择对应高属性铭文
+            function greedyInit() {
+                // 固定食物或随机选择
+                const food = fixedFood || randomChoice(Object.keys(FOODS));
+                
+                if (!constraints) {
+                    return {
+                        red: randomInsignias(INSIGNIAS.red, 6),
+                        blue: randomInsignias(INSIGNIAS.blue, 6),
+                        green: randomInsignias(INSIGNIAS.green, 6),
+                        food: food
+                    };
+                }
+                
+                // 根据每个约束选择高属性铭文
+                const getHighStatChoice = (zone) => {
+                    let pool = [...INSIGNIAS[zone]];
+                    for (const statKey of Object.keys(constraints)) {
+                        const statUpper = statKey.replace(/([A-Z])/g, '_$1').toUpperCase();
+                        const topInsigs = getTopStatInsignias(zone, statKey, 6);
+                        if (topInsigs.length > 0 && (topInsigs[0][statUpper] || 0) > 0) {
+                            pool = topInsigs;
+                        }
+                    }
+                    return randomChoice(pool);
+                };
+                
+                return {
+                    red: Array(6).fill(null).map(() => getHighStatChoice('red')),
+                    blue: Array(6).fill(null).map(() => getHighStatChoice('blue')),
+                    green: Array(6).fill(null).map(() => getHighStatChoice('green')),
+                    food: food
+                };
+            }
+            
+            // 通用约束穷举搜索
+            function exhaustiveConstraintSearch() {
+                if (!constraints) return [];
+                
+                const searchResults = [];
+                const statKeys = Object.keys(constraints);
+                
+                // 为每个约束准备高属性铭文池
+                const pools = {};
+                for (const statKey of statKeys) {
+                    const statUpper = statKey.replace(/([A-Z])/g, '_$1').toUpperCase();
+                    pools[statKey] = {
+                        red: getTopStatInsignias('red', statKey, 10).filter(i => (i[statUpper] || 0) > 0),
+                        blue: getTopStatInsignias('blue', statKey, 10).filter(i => (i[statUpper] || 0) > 0),
+                        green: getTopStatInsignias('green', statKey, 10).filter(i => (i[statUpper] || 0) > 0)
+                    };
+                }
+                
+                // 对每种食物进行穷举
+                for (const food of getFoodsToSearch()) {
+                    // 方案：使用高属性铭文池生成组合
+                    for (const statKey of statKeys) {
+                        const pool = pools[statKey];
+                        
+                        for (let i = 0; i < 4000; i++) {
+                            // 红区：从该属性高属性池中随机选择
+                            const red = pool.red.length > 0 
+                                ? Array(6).fill(null).map(() => randomChoice(pool.red))
+                                : Array(6).fill(null).map(() => randomChoice(INSIGNIAS.red));
+                            
+                            // 蓝区
+                            const blue = pool.blue.length > 0
+                                ? Array(6).fill(null).map(() => randomChoice(pool.blue))
+                                : Array(6).fill(null).map(() => randomChoice(INSIGNIAS.blue));
+                            
+                            // 绿区
+                            const green = pool.green.length > 0
+                                ? Array(6).fill(null).map(() => randomChoice(pool.green))
+                                : Array(6).fill(null).map(() => randomChoice(INSIGNIAS.green));
+                            
+                            const key = configKey(red, blue, green, food);
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                const result = evaluate(red, blue, green, food);
+                                if (result) searchResults.push(result);
+                            }
+                        }
+                    }
+                    
+                    // 混合策略：使用所有约束的高属性铭文混合
+                    for (let i = 0; i < 3000; i++) {
+                        const red = [], blue = [], green = [];
+                        for (let j = 0; j < 6; j++) {
+                            // 随机选择一个约束来获取铭文
+                            const statKey = randomChoice(statKeys);
+                            const pool = pools[statKey];
+                            
+                            red.push(pool.red.length > 0 ? randomChoice(pool.red) : randomChoice(INSIGNIAS.red));
+                            blue.push(pool.blue.length > 0 ? randomChoice(pool.blue) : randomChoice(INSIGNIAS.blue));
+                            green.push(pool.green.length > 0 ? randomChoice(pool.green) : randomChoice(INSIGNIAS.green));
+                        }
+                        
+                        const key = configKey(red, blue, green, food);
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            const result = evaluate(red, blue, green, food);
+                            if (result) searchResults.push(result);
+                        }
+                    }
+                }
+                
+                return searchResults;
+            }
+            
+            // 暴击率约束专用穷举搜索（保留原有逻辑）
+            function exhaustiveCritSearch() {
+                if (!constraints || !constraints.critRate) return [];
+                
+                const critResults = [];
+                const allCritRed = getHighCritInsignias('red');
+                const allCritBlue = getHighCritInsignias('blue');
+                const allCritGreen = getHighCritInsignias('green');
+                
+                for (const food of getFoodsToSearch()) {
+                    // 方案1：全暴击率铭文组合
+                    const topRedCount = Math.min(8, allCritRed.length);
+                    const topBlueCount = Math.min(8, allCritBlue.length);
+                    const topGreenCount = Math.min(8, allCritGreen.length);
+                    
+                    for (let i = 0; i < 5000; i++) {
+                        const red = Array(6).fill(null).map(() => randomChoice(allCritRed.slice(0, topRedCount)));
+                        const blue = [];
+                        for (let j = 0; j < 6; j++) {
+                            if (Math.random() < 0.6) {
+                                blue.push(randomChoice(allCritBlue.slice(0, topBlueCount)));
+                            } else {
+                                blue.push(randomChoice(INSIGNIAS.blue));
+                            }
+                        }
+                        const green = Array(6).fill(null).map(() => randomChoice(allCritGreen.slice(0, topGreenCount)));
+                        
+                        const key = configKey(red, blue, green, food);
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            const result = evaluate(red, blue, green, food);
+                            if (result) critResults.push(result);
+                        }
+                    }
+                    
+                    // 方案2：纯暴击率铭文
+                    const pureRedCrit = allCritRed.filter(i => i.CRIT_RATE > 0);
+                    const pureBlueCrit = allCritBlue.filter(i => i.CRIT_RATE > 0);
+                    const pureGreenCrit = allCritGreen.filter(i => i.CRIT_RATE > 0);
+                    
+                    if (pureRedCrit.length > 0 && pureBlueCrit.length > 0 && pureGreenCrit.length > 0) {
+                        for (let i = 0; i < 3000; i++) {
+                            const red = Array(6).fill(null).map(() => randomChoice(pureRedCrit));
+                            const blue = Array(6).fill(null).map(() => randomChoice(pureBlueCrit));
+                            const green = Array(6).fill(null).map(() => randomChoice(pureGreenCrit));
+                            
+                            const key = configKey(red, blue, green, food);
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                const result = evaluate(red, blue, green, food);
+                                if (result) critResults.push(result);
+                            }
+                        }
+                    }
+                }
+                
+                return critResults;
+            }
+            
+            // 第一阶段：通用约束穷举搜索 + 暴击率专用搜索
+            const exhaustiveResults = exhaustiveConstraintSearch();
+            results.push(...exhaustiveResults);
+            
+            // 如果有暴击率约束，额外运行暴击率专用搜索
+            if (constraints && constraints.critRate) {
+                const critExhaustiveResults = exhaustiveCritSearch();
+                results.push(...critExhaustiveResults);
+            }
+            
+            // 第一阶段补充：大量普通随机搜索（多样化探索）
+            // 即使有约束，也要探索不受约束限制的方案，然后通过约束过滤
+            const randomSearchCount = fixedFood ? 80000 : 50000; // 固定食物时增加搜索量
+            for (let i = 0; i < randomSearchCount; i++) {
+                const food = getFoodChoice();
+                const red = randomInsignias(INSIGNIAS.red, 6);
+                const blue = randomInsignias(INSIGNIAS.blue, 6);
+                const green = randomInsignias(INSIGNIAS.green, 6);
+                
+                const key = configKey(red, blue, green, food);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    const result = evaluate(red, blue, green, food);
+                    if (result) results.push(result);
+                }
+            }
+            
+            // 第二阶段：贪心初始化 + 随机初始化
+            const initCount = constraints ? 3000 : 200;
+            for (const food of getFoodsToSearch()) {
+                for (let i = 0; i < initCount; i++) {
+                    const { red, blue, green } = greedyInit();
+                    
+                    const key = configKey(red, blue, green, food);
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        const result = evaluate(red, blue, green, food);
+                        if (result) results.push(result);
+                    }
+                }
+            }
+            
+            // 局部搜索 - 大幅增加迭代次数
+            const sortedResults = sortResults([...results]);
+            let best = sortedResults.slice(0, 50); // 保留更多候选方案
+            
+            for (let i = 0; i < iterations; i++) {
+                let base;
+                if (best.length === 0) {
+                    base = {
+                        red: randomInsignias(INSIGNIAS.red, 6),
+                        blue: randomInsignias(INSIGNIAS.blue, 6),
+                        green: randomInsignias(INSIGNIAS.green, 6),
+                        food: getFoodChoice()
+                    };
+                } else {
+                    base = randomChoice(best);
+                }
+                
+                let newRed = [...base.red];
+                let newBlue = [...base.blue];
+                let newGreen = [...base.green];
+                let food = base.food;
+                
+                const mutationType = Math.random();
+                
+                // 多样化变异策略
+                const getMutationInsignia = (zone) => {
+                    if (constraints) {
+                        // 50%概率使用高属性铭文，50%概率完全随机
+                        if (Math.random() < 0.5) {
+                            const statKeys = Object.keys(constraints);
+                            const statKey = randomChoice(statKeys);
+                            const pool = getTopStatInsignias(zone, statKey, 8);
+                            if (pool.length > 0) {
+                                return randomChoice(pool);
+                            }
+                        }
+                    }
+                    return randomChoice(INSIGNIAS[zone]);
+                };
+                
+                if (mutationType < 0.25) {
+                    // 替换1-3个铭文（使用变异策略）
+                    const count = Math.floor(Math.random() * 3) + 1;
+                    for (let c = 0; c < count; c++) {
+                        const zone = Math.floor(Math.random() * 3);
+                        const idx = Math.floor(Math.random() * 6);
+                        if (zone === 0) {
+                            newRed[idx] = getMutationInsignia('red');
+                        } else if (zone === 1) {
+                            newBlue[idx] = getMutationInsignia('blue');
+                        } else {
+                            newGreen[idx] = getMutationInsignia('green');
+                        }
+                    }
+                } else if (mutationType < 0.4) {
+                    // 替换1-3个铭文（完全随机）
+                    const count = Math.floor(Math.random() * 3) + 1;
+                    for (let c = 0; c < count; c++) {
+                        const zone = Math.floor(Math.random() * 3);
+                        const idx = Math.floor(Math.random() * 6);
+                        if (zone === 0) {
+                            newRed[idx] = randomChoice(INSIGNIAS.red);
+                        } else if (zone === 1) {
+                            newBlue[idx] = randomChoice(INSIGNIAS.blue);
+                        } else {
+                            newGreen[idx] = randomChoice(INSIGNIAS.green);
+                        }
+                    }
+                } else if (mutationType < 0.55) {
+                    // 交换铭文位置
+                    const zone = Math.floor(Math.random() * 3);
+                    const idx1 = Math.floor(Math.random() * 6);
+                    let idx2 = Math.floor(Math.random() * 6);
+                    while (idx2 === idx1) idx2 = Math.floor(Math.random() * 6);
+                    
+                    if (zone === 0) {
+                        [newRed[idx1], newRed[idx2]] = [newRed[idx2], newRed[idx1]];
+                    } else if (zone === 1) {
+                        [newBlue[idx1], newBlue[idx2]] = [newBlue[idx2], newBlue[idx1]];
+                    } else {
+                        [newGreen[idx1], newGreen[idx2]] = [newGreen[idx2], newGreen[idx1]];
+                    }
+                } else if (mutationType < 0.85) {
+                    // 替换食物（固定食物时不改变）
+                    if (!fixedFood) {
+                        food = getFoodChoice();
+                    }
+                } else {
+                    // 完全随机生成（增加多样性）
+                    newRed = randomInsignias(INSIGNIAS.red, 6);
+                    newBlue = randomInsignias(INSIGNIAS.blue, 6);
+                    newGreen = randomInsignias(INSIGNIAS.green, 6);
+                    food = getFoodChoice();
+                }
+                
+                const key = configKey(newRed, newBlue, newGreen, food);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    const result = evaluate(newRed, newBlue, newGreen, food);
+                    if (result) {
+                        results.push(result);
+                        
+                        // 更新best数组：保留按伤害排序的top方案
+                        best.push(result);
+                        best = sortResults(best).slice(0, 50);
+                    }
+                }
+            }
+            
+            // 最终排序：约束优先，模式其次
+            return sortResults(results).slice(0, 10);
+        }
+
+        // ============== UI 更新 ==============
+        function updateConfigPreview() {
+            const preview = document.getElementById('configPreview');
+            
+            let html = '';
+            
+            if (selectedCharacter) {
+                html += `<p style="color: #4d96ff; margin-bottom: 8px;"><strong>共鸣：</strong>${selectedCharacter.name}</p>`;
+                html += `<p style="color: #888; font-size: 0.85em; margin-bottom: 12px;">${selectedCharacter.typeName}</p>`;
+            }
+            
+            if (selectedEquipment) {
+                html += `<p style="color: #ffd93d; margin-bottom: 8px;"><strong>装备：</strong>${selectedEquipment.name}</p>`;
+                if (Object.keys(selectedEquipment.bonus).length > 0) {
+                    const bonusText = Object.entries(selectedEquipment.bonus)
+                        .map(([k, v]) => `${k}: +${v}`)
+                        .join(', ');
+                    html += `<p style="color: #6bcb77; font-size: 0.8em; margin-bottom: 8px;">额外效果: ${bonusText}</p>`;
+                }
+            }
+            
+            if (!selectedCharacter && !selectedEquipment) {
+                html = '<p style="color: #888; text-align: center;">请选择共鸣和装备后查看</p>';
+            }
+            
+            preview.innerHTML = html;
+        }
+
+        function showLoading() {
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>正在搜索最优配置...</p>
+                </div>
+            `;
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function aggregateInsignias(insignias) {
+            const counts = {};
+            for (const insig of insignias) {
+                counts[insig.name] = (counts[insig.name] || 0) + 1;
+            }
+            return Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => `${name} x${count}`)
+                .join(', ');
+        }
+
+        function displayResults(results) {
+            // 保存结果供导入使用
+            window.lastSearchResults = results;
+            
+            const container = document.getElementById('resultsContainer');
+            const baseStats = getBaseStats();
+            const baseDamage = calculateDamage(baseStats, null, [], [], []).damage;
+            const constraints = getConstraints();
+            
+            // 计算当前配置的理论最大暴击率
+            let maxCritInfo = '';
+            if (constraints && constraints.critRate) {
+                // 找到暴击率最高的铭文
+                const maxCritRed = Math.max(...INSIGNIAS.red.map(i => i.CRIT_RATE || 0)) * 6;
+                const maxCritBlue = Math.max(...INSIGNIAS.blue.map(i => i.CRIT_RATE || 0)) * 6;
+                const maxCritGreen = Math.max(...INSIGNIAS.green.map(i => i.CRIT_RATE || 0)) * 6;
+                const baseCrit = baseStats.CRIT_RATE || 0;
+                const maxPossibleCrit = Math.min(baseCrit + maxCritRed + maxCritBlue + maxCritGreen, 1);
+                
+                maxCritInfo = `<p style="color: #ff9800; font-size: 0.8em; margin-bottom: 12px;">
+                    💡 当前共鸣+装备的理论最大暴击率: ${(maxPossibleCrit * 100).toFixed(1)}%
+                </p>`;
+            }
+            
+            // 构建约束显示
+            let constraintInfo = '';
+            if (constraints) {
+                const constraintNames = {
+                    'finalATK': '最终攻击力',
+                    'finalDEF': '最终防御力',
+                    'finalHP': '最终生命值',
+                    'critRate': '暴击率',
+                    'critDmg': '暴击效果',
+                    'flowPower': '流技强度',
+                    'fullFlow': '全流强度',
+                    'chase': '追击率',
+                    'breakPower': '破势强度',
+                    'heal': '治愈强度',
+                    'chargeEff': '绝技充能效率',
+                    'extraATK': '额外攻击力'
+                };
+                
+                const parts = [];
+                for (const [key, range] of Object.entries(constraints)) {
+                    const name = constraintNames[key] || key;
+                    const minText = range.min === -Infinity ? '0' : range.min;
+                    const maxText = range.max === Infinity ? '∞' : range.max;
+                    parts.push(`${name}: ${minText} ~ ${maxText}`);
+                }
+                constraintInfo = `<p style="color: #ffc107; font-size: 0.85em; margin-bottom: 8px;">约束条件: ${parts.join(' | ')}</p>`;
+            }
+            
+            container.innerHTML = constraintInfo + maxCritInfo + results.map((result, index) => {
+                const improvement = ((result.damage - baseDamage) / baseDamage * 100).toFixed(1);
+                const modeScore = getModeScore(result);
+                
+                return `
+                    <div class="result-card ${index === 0 ? 'top-1' : ''}">
+                        <div class="result-header">
+                            <span class="result-rank ${index === 0 ? 'top-1' : ''}">第 ${index + 1} 名</span>
+                            <span class="result-damage">${result.damage.toFixed(2)}</span>
+                            <span class="improvement-badge">${improvement >= 0 ? '+' : ''}${improvement}%</span>
+                            <span class="mode-score-badge">综合评分: ${modeScore.toFixed(0)}</span>
+                        </div>
+                        
+                        <span class="result-food">🍜 ${result.food}</span>
+                        
+                        <div class="result-stats-grid">
+                            <div class="result-stat">
+                                <div class="result-stat-label">最终攻击力</div>
+                                <div class="result-stat-value">${formatNumber(result.finalATK)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">最终防御力</div>
+                                <div class="result-stat-value">${formatNumber(result.finalDEF)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">最终生命值</div>
+                                <div class="result-stat-value">${formatNumber(result.finalHP)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">暴击率</div>
+                                <div class="result-stat-value">${formatPercent(result.critRate)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">暴击效果</div>
+                                <div class="result-stat-value">${result.critDmg.toFixed(3)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">流技强度</div>
+                                <div class="result-stat-value">${formatPercent(result.flowPower)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">全流强度</div>
+                                <div class="result-stat-value">${formatPercent(result.fullFlow)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">追击率</div>
+                                <div class="result-stat-value">${formatPercent(result.chase)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">治愈强度</div>
+                                <div class="result-stat-value">${formatPercent(result.heal)}</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-stat-label">破势强度</div>
+                                <div class="result-stat-value">${formatPercent(result.breakPower)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="insignia-section">
+                            <div class="insignia-zone">
+                                <div class="zone-title red">🔴 红区铭文</div>
+                                <div class="insignia-list">${aggregateInsignias(result.red)}</div>
+                            </div>
+                            <div class="insignia-zone">
+                                <div class="zone-title blue">🔵 蓝区铭文</div>
+                                <div class="insignia-list">${aggregateInsignias(result.blue)}</div>
+                            </div>
+                            <div class="insignia-zone">
+                                <div class="zone-title green">🟢 绿区铭文</div>
+                                <div class="insignia-list">${aggregateInsignias(result.green)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 初始化固定食物选择
+        function initFixedFoodSelection() {
+            const grid = document.getElementById('fixedFoodGrid');
+            const foodKeys = Object.keys(FOODS);
+            
+            let html = `<button class="food-fixed-btn" onclick="selectFixedFood(null)">自动选择</button>`;
+            html += foodKeys.map(key => {
+                return `<button class="food-fixed-btn" data-food="${key}" onclick="selectFixedFood('${key}')">${key}</button>`;
+            }).join('');
+            
+            grid.innerHTML = html;
+        }
+
+        // 选择/取消固定食物
+        function selectFixedFood(foodKey) {
+            // 取消所有选中状态
+            document.querySelectorAll('.food-fixed-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            if (foodKey === null) {
+                // 自动选择
+                fixedFood = null;
+            } else if (fixedFood === foodKey) {
+                // 点击已选中的，取消选择
+                fixedFood = null;
+            } else {
+                // 选中新的
+                fixedFood = foodKey;
+                const btn = document.querySelector(`.food-fixed-btn[data-food="${foodKey}"]`);
+                if (btn) btn.classList.add('selected');
+            }
+        }
+
+        function startSearch() {
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.textContent = '🔄 搜索中...';
+            
+            showLoading();
+            
+            setTimeout(() => {
+                try {
+                    const results = smartSearch(1000000);
+                    if (results.length === 0) {
+                        document.getElementById('resultsContainer').innerHTML = `
+                            <div class="loading">
+                                <p style="color: #ffc107;">未找到符合条件的配置方案。</p>
+                                <p style="color: #888; font-size: 0.85em; margin-top: 8px;">💡 提示：请检查约束条件是否过于严格，尝试放宽数值范围</p>
+                            </div>
+                        `;
+                    } else {
+                        displayResults(results);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('resultsContainer').innerHTML = `
+                        <div class="loading">
+                            <p style="color: #ff6b6b;">搜索出错，请重试</p>
+                        </div>
+                    `;
+                }
+                
+                btn.disabled = false;
+                btn.textContent = '🔍 开始搜索最优配置';
+            }, 100);
+        }
+
+        // ============== 工具函数 ==============
+        function formatNumber(num) {
+            if (num >= 10000) {
+                return (num / 10000).toFixed(2) + '万';
+            }
+            return num.toFixed(0);
+        }
+
+        function formatPercent(num) {
+            return (num * 100).toFixed(1) + '%';
+        }
+
+        // ============== 自定义配置板块 ==============
+        
+        // 自定义配置状态
+        const customConfig = {
+            character: null,
+            equipment: null,
+            food: null,
+            red: [],
+            blue: [],
+            green: []
+        };
+        
+        let customSelectedLiuMaiOptions = {}; // 自定义配置的流脉切换选择
+        
+        // 初始化自定义配置板块
+        function initCustomConfig() {
+            // 初始化共鸣选择
+            const charGrid = document.getElementById('customCharacterGrid');
+            charGrid.innerHTML = Object.entries(CHARACTERS).map(([key, char]) => `
+                <button class="custom-char-btn" data-char="${key}" onclick="selectCustomCharacter('${key}')">
+                    <div class="char-name">${char.name.split('/')[0]}</div>
+                    <div class="char-type">${char.typeName}</div>
+                </button>
+            `).join('');
+            
+            // 初始化装备选择
+            const equipGrid = document.getElementById('customEquipGrid');
+            let equipHtml = '';
+            for (const cat of Object.values(EQUIPMENT_SETS)) {
+                for (const set of cat.sets) {
+                    equipHtml += `
+                        <button class="custom-equip-btn" data-equip="${set.id}" onclick="selectCustomEquipment('${set.id}')">
+                            ${set.name}
+                        </button>
+                    `;
+                }
+            }
+            equipGrid.innerHTML = equipHtml;
+            
+            // 初始化食物选择
+            const foodGrid = document.getElementById('customFoodGrid');
+            foodGrid.innerHTML = Object.keys(FOODS).map(food => `
+                <button class="food-select-btn" data-food="${food}" onclick="selectCustomFood('${food}')">
+                    ${FOOD_ICONS[food] || '🍜'} ${food}
+                </button>
+            `).join('');
+            
+            // 初始化红区铭文选择
+            const redSelect = document.getElementById('customRedSelect');
+            redSelect.innerHTML = INSIGNIAS.red.map(insig => `
+                <div class="insignia-option" data-name="${insig.name}" data-zone="red">
+                    <button class="insignia-ctrl-btn remove" onclick="removeOneInsignia('${insig.name}', 'red')">−</button>
+                    <span class="insig-name">${insig.name}</span>
+                    <span class="insignia-count ${insig.name}" id="count-red-${insig.name}">0</span>
+                    <button class="insignia-ctrl-btn add" onclick="addOneInsignia('${insig.name}', 'red')">+</button>
+                </div>
+            `).join('');
+            
+            // 初始化蓝区铭文选择
+            const blueSelect = document.getElementById('customBlueSelect');
+            blueSelect.innerHTML = INSIGNIAS.blue.map(insig => `
+                <div class="insignia-option" data-name="${insig.name}" data-zone="blue">
+                    <button class="insignia-ctrl-btn remove" onclick="removeOneInsignia('${insig.name}', 'blue')">−</button>
+                    <span class="insig-name">${insig.name}</span>
+                    <span class="insignia-count ${insig.name}" id="count-blue-${insig.name}">0</span>
+                    <button class="insignia-ctrl-btn add" onclick="addOneInsignia('${insig.name}', 'blue')">+</button>
+                </div>
+            `).join('');
+            
+            // 初始化绿区铭文选择
+            const greenSelect = document.getElementById('customGreenSelect');
+            greenSelect.innerHTML = INSIGNIAS.green.map(insig => `
+                <div class="insignia-option" data-name="${insig.name}" data-zone="green">
+                    <button class="insignia-ctrl-btn remove" onclick="removeOneInsignia('${insig.name}', 'green')">−</button>
+                    <span class="insig-name">${insig.name}</span>
+                    <span class="insignia-count ${insig.name}" id="count-green-${insig.name}">0</span>
+                    <button class="insignia-ctrl-btn add" onclick="addOneInsignia('${insig.name}', 'green')">+</button>
+                </div>
+            `).join('');
+            
+            updateCustomConfigDisplay();
+        }
+        
+        // 选择共鸣
+        function selectCustomCharacter(key) {
+            const char = CHARACTERS[key];
+            if (!char) return;
+            
+            // 如果点击的是当前已选中的，则取消选择
+            if (customConfig.character && customConfig.character.name === char.name) {
+                document.querySelectorAll('.custom-char-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                customConfig.character = null;
+                updateCustomConfigDisplay();
+                return;
+            }
+            
+            // 取消之前的选中
+            document.querySelectorAll('.custom-char-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 选中新的
+            const btn = document.querySelector(`.custom-char-btn[data-char="${key}"]`);
+            if (btn) {
+                btn.classList.add('selected');
+            }
+            
+            customConfig.character = char;
+            renderCustomLiuMaiOptions();
+            updateCustomConfigDisplay();
+        }
+        
+        // 渲染自定义配置的流脉切换选项
+        function renderCustomLiuMaiOptions() {
+            const section = document.getElementById('customLiumaiOptionsSection');
+            const container = document.getElementById('customLiumaiOptionsContainer');
+            
+            const char = customConfig.character;
+            if (!char || !char.liuMaiOptions) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            customSelectedLiuMaiOptions = {};
+            
+            const options = char.liuMaiOptions;
+            let html = '';
+            let groupIdx = 0;
+            const groupIds = Object.keys(options);
+            
+            for (const [groupId, group] of Object.entries(options)) {
+                // 初始化默认选择
+                customSelectedLiuMaiOptions[groupIdx] = group.defaultSelected || 0;
+                
+                html += '<div class="liumai-option-group" data-idx="' + groupIdx + '"><div class="liumai-group-name">' + group.name + '</div>';
+                
+                group.options.forEach((opt, idx) => {
+                    const effectText = Object.keys(opt.effect).length > 0 
+                        ? '属性: ' + Object.entries(opt.effect).map(([k, v]) => k + ' +' + (v * 100).toFixed(1) + '%').join(', ')
+                        : '无属性变化';
+                    const isSelected = idx === customSelectedLiuMaiOptions[groupIdx];
+                    const itemClass = isSelected ? 'liumai-option-btn selected' : 'liumai-option-btn';
+                    html += '<div class="' + itemClass + '" data-group="' + groupIdx + '" data-option="' + idx + '">' +
+                        '<div class="liumai-option-btn-label">' + opt.label + '</div>' +
+                        '<div class="liumai-option-btn-effect">' + effectText + '</div>' +
+                        '</div>';
+                });
+                
+                html += '</div>';
+                groupIdx++;
+            }
+            
+            container.innerHTML = html;
+            
+            // 绑定点击事件
+            container.querySelectorAll('.liumai-option-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const g = parseInt(this.dataset.group);
+                    const o = parseInt(this.dataset.option);
+                    selectCustomLiuMaiOption(g, o);
+                });
+            });
+        }
+        
+        // 选择自定义配置的流脉切换选项
+        function selectCustomLiuMaiOption(groupIdx, optionIndex) {
+            customSelectedLiuMaiOptions[groupIdx] = optionIndex;
+            
+            // 更新UI
+            const group = document.querySelector('#customLiumaiOptionsContainer .liumai-option-group[data-idx="' + groupIdx + '"]');
+            if (group) {
+                const items = group.querySelectorAll('.liumai-option-btn');
+                items.forEach((item, idx) => {
+                    item.classList.toggle('selected', idx === optionIndex);
+                });
+            }
+            
+            updateCustomConfigDisplay();
+        }
+        
+        // 选择装备
+        function selectCustomEquipment(id) {
+            // 找到装备
+            let equipSet = null;
+            for (const cat of Object.values(EQUIPMENT_SETS)) {
+                const set = cat.sets.find(s => s.id === id);
+                if (set) {
+                    equipSet = set;
+                    break;
+                }
+            }
+            if (!equipSet) return;
+            
+            // 如果点击的是当前已选中的，则取消选择
+            if (customConfig.equipment && customConfig.equipment.id === id) {
+                document.querySelectorAll('.custom-equip-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                customConfig.equipment = null;
+                updateCustomConfigDisplay();
+                return;
+            }
+            
+            // 取消之前的选中
+            document.querySelectorAll('.custom-equip-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 选中新的
+            const btn = document.querySelector(`.custom-equip-btn[data-equip="${id}"]`);
+            if (btn) {
+                btn.classList.add('selected');
+            }
+            
+            customConfig.equipment = equipSet;
+            updateCustomConfigDisplay();
+        }
+        
+        // 选择食物
+        function selectCustomFood(food) {
+            // 如果点击的是当前已选中的，则取消选择
+            if (customConfig.food === food) {
+                document.querySelectorAll('.food-select-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                customConfig.food = null;
+                updateCustomConfigDisplay();
+                return;
+            }
+            
+            // 取消之前的选中
+            document.querySelectorAll('.food-select-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 选中新的
+            const btn = document.querySelector(`.food-select-btn[data-food="${food}"]`);
+            if (btn) {
+                btn.classList.add('selected');
+            }
+            
+            customConfig.food = food;
+            updateCustomConfigDisplay();
+        }
+        
+        // 添加1个铭文
+        function addOneInsignia(name, zone) {
+            const arr = customConfig[zone];
+            
+            // 如果该区已满6个，不允许再添加
+            if (arr.length >= 6) {
+                alert(`${zone === 'red' ? '红' : zone === 'blue' ? '蓝' : '绿'}区铭文已满(6个)，请先移除一些！`);
+                return;
+            }
+            
+            // 添加1个该铭文
+            arr.push(name);
+            
+            // 更新显示
+            updateInsigniaDisplay(name, zone);
+            updateCustomConfigDisplay();
+        }
+        
+        // 移除1个铭文
+        function removeOneInsignia(name, zone) {
+            const arr = customConfig[zone];
+            const idx = arr.indexOf(name);
+            
+            if (idx > -1) {
+                arr.splice(idx, 1);
+                updateInsigniaDisplay(name, zone);
+                updateCustomConfigDisplay();
+            }
+        }
+        
+        // 更新铭文显示（数量、样式、按钮状态）
+        function updateInsigniaDisplay(name, zone) {
+            const arr = customConfig[zone];
+            const countKey = `count-${zone}-${name}`;
+            const countEl = document.getElementById(countKey);
+            const currentCount = arr.filter(n => n === name).length;
+            countEl.textContent = currentCount;
+            
+            const optionEl = document.querySelector(`.insignia-option[data-name="${name}"][data-zone="${zone}"]`);
+            const removeBtn = optionEl?.querySelector('.insignia-ctrl-btn.remove');
+            const addBtn = optionEl?.querySelector('.insignia-ctrl-btn.add');
+            
+            if (countEl) {
+                if (currentCount > 0) {
+                    countEl.classList.add('has-count');
+                } else {
+                    countEl.classList.remove('has-count');
+                }
+            }
+            
+            // 更新按钮禁用状态
+            const totalInZone = arr.length;
+            const countOfThis = currentCount;
+            
+            // 移除按钮：当前没有这个铭文时禁用
+            if (removeBtn) {
+                removeBtn.disabled = countOfThis === 0;
+            }
+            // 添加按钮：该区已满或这个铭文已达6个时禁用
+            if (addBtn) {
+                addBtn.disabled = totalInZone >= 6 || countOfThis >= 6;
+            }
+        }
+        
+        // 批量更新所有铭文显示（初始化时调用）
+        function updateAllInsigniaDisplays(zone) {
+            document.querySelectorAll(`.insignia-option[data-zone="${zone}"]`).forEach(optionEl => {
+                const name = optionEl.dataset.name;
+                updateInsigniaDisplay(name, zone);
+            });
+        }
+        
+        // 获取指定铭文对象
+        function getInsignia(name, zone) {
+            return INSIGNIAS[zone].find(i => i.name === name);
+        }
+        
+        // 更新自定义配置显示
+        function updateCustomConfigDisplay() {
+            // 根据自定义选择的共鸣和装备计算基础属性
+            const customChar = customConfig.character;
+            const customEquip = customConfig.equipment;
+            
+            const base = { ...YUANLIU_BASE };
+            
+            // 初始化基础属性（仅来自角色基础、流脉、凝武、装备）
+            base.baseATK = YUANLIU_BASE.ATK || 0;
+            base.baseHP = YUANLIU_BASE.HP || 0;
+            base.baseDEF = YUANLIU_BASE.DEF || 0;
+            
+            // 添加流脉属性
+            if (customChar && customChar.liuMai) {
+                const lm = customChar.liuMai;
+                if (lm.HP) base.baseHP += lm.HP;
+                if (lm.ATK) base.baseATK += lm.ATK;
+                if (lm.DEF) base.baseDEF += lm.DEF;
+                if (lm.CRIT_RATE) base.CRIT_RATE = (base.CRIT_RATE || 0) + lm.CRIT_RATE;
+                if (lm.CRIT_DMG) base.CRIT_DMG = (base.CRIT_DMG || 0) + lm.CRIT_DMG;
+                if (lm.FLOW_POWER) base.FLOW_POWER = (base.FLOW_POWER || 0) + lm.FLOW_POWER;
+                if (lm.EXTRA_ATK) base.EXTRA_ATK = (base.EXTRA_ATK || 0) + lm.EXTRA_ATK;
+                
+                // 添加流脉切换选项属性（使用自定义配置的选择）
+                if (customChar.liuMaiOptions) {
+                    const liuMaiKeys = Object.keys(customChar.liuMaiOptions);
+                    for (const [groupIdx, optionIndex] of Object.entries(customSelectedLiuMaiOptions)) {
+                        const groupId = liuMaiKeys[parseInt(groupIdx)];
+                        const group = customChar.liuMaiOptions[groupId];
+                        if (group && group.options && group.options[optionIndex]) {
+                            const effect = group.options[optionIndex].effect;
+                            for (const [key, value] of Object.entries(effect)) {
+                                if (value) base[key] = (base[key] || 0) + value;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 添加凝武属性
+            if (customChar && customChar.ningWu) {
+                const nw = customChar.ningWu;
+                if (nw.HP) base.baseHP += nw.HP;
+                if (nw.ATK) base.baseATK += nw.ATK;
+                if (nw.DEF) base.baseDEF += nw.DEF;
+                if (nw.CRIT_RATE) base.CRIT_RATE = (base.CRIT_RATE || 0) + nw.CRIT_RATE;
+                if (nw.CRIT_DMG) base.CRIT_DMG = (base.CRIT_DMG || 0) + nw.CRIT_DMG;
+                if (nw.FLOW_POWER) base.FLOW_POWER = (base.FLOW_POWER || 0) + nw.FLOW_POWER;
+                if (nw.FULL_FLOW) base.FULL_FLOW = (base.FULL_FLOW || 0) + nw.FULL_FLOW;
+                if (nw.CHASE) base.CHASE = (base.CHASE || 0) + nw.CHASE;
+                if (nw.EXTRA_ATK) base.EXTRA_ATK = (base.EXTRA_ATK || 0) + nw.EXTRA_ATK;
+                if (nw.HEAL) base.HEAL = (base.HEAL || 0) + nw.HEAL;
+                if (nw.CHARGE_EFF) base.CHARGE_EFF = (base.CHARGE_EFF || 0) + nw.CHARGE_EFF;
+                if (nw.BREAK_POWER) base.BREAK_POWER = (base.BREAK_POWER || 0) + nw.BREAK_POWER;
+                if (nw.DEF_PCT) base.DEF_PCT = (base.DEF_PCT || 0) + nw.DEF_PCT;
+                if (nw.EXTRA_DEF) base.EXTRA_DEF = (base.EXTRA_DEF || 0) + nw.EXTRA_DEF;
+                if (nw.EXTRA_HP) base.EXTRA_HP = (base.EXTRA_HP || 0) + nw.EXTRA_HP;
+            }
+            
+            // 添加装备属性（装备提供的HP、ATK、DEF作为基础属性的一部分）
+            if (customEquip) {
+                const eq = customEquip.effects;
+                if (eq.HP) base.baseHP += eq.HP;
+                if (eq.ATK) base.baseATK += eq.ATK;
+                if (eq.DEF) base.baseDEF += eq.DEF;
+                if (eq.CRIT_RATE) base.CRIT_RATE = (base.CRIT_RATE || 0) + eq.CRIT_RATE;
+                if (eq.CRIT_DMG) base.CRIT_DMG = (base.CRIT_DMG || 0) + eq.CRIT_DMG;
+                if (eq.FLOW_POWER) base.FLOW_POWER = (base.FLOW_POWER || 0) + eq.FLOW_POWER;
+                if (eq.FULL_FLOW) base.FULL_FLOW = (base.FULL_FLOW || 0) + eq.FULL_FLOW;
+                if (eq.CHASE) base.CHASE = (base.CHASE || 0) + eq.CHASE;
+                if (eq.EXTRA_ATK) base.EXTRA_ATK = (base.EXTRA_ATK || 0) + eq.EXTRA_ATK;
+                if (eq.HEAL) base.HEAL = (base.HEAL || 0) + eq.HEAL;
+                if (eq.CHARGE_EFF) base.CHARGE_EFF = (base.CHARGE_EFF || 0) + eq.CHARGE_EFF;
+                if (eq.BREAK_POWER) base.BREAK_POWER = (base.BREAK_POWER || 0) + eq.BREAK_POWER;
+                if (eq.EXTRA_DEF) base.EXTRA_DEF = (base.EXTRA_DEF || 0) + eq.EXTRA_DEF;
+                if (eq.EXTRA_HP) base.EXTRA_HP = (base.EXTRA_HP || 0) + eq.EXTRA_HP;
+                
+                // 装备额外效果
+                if (customEquip.bonus) {
+                    for (const [key, val] of Object.entries(customEquip.bonus)) {
+                        base[key] = (base[key] || 0) + val;
+                    }
+                }
+            }
+            
+            // 添加固定属性
+            for (const [key, val] of Object.entries(FIXED_STATS)) {
+                base[key] = (base[key] || 0) + val;
+            }
+            
+            // 初始化默认值
+            base.FLOW_POWER = base.FLOW_POWER || 0;
+            base.FULL_FLOW = base.FULL_FLOW || 0;
+            base.CHASE = base.CHASE || 0;
+            base.BREAK_POWER = base.BREAK_POWER || 0;
+            base.HEAL = base.HEAL || 0;
+            base.CHARGE_EFF = base.CHARGE_EFF || 0;
+            
+            const baseStats = base;
+            const baseDamage = calculateDamage(baseStats, null, [], [], []).damage;
+            
+            // 获取选中的铭文对象
+            const redInsigs = customConfig.red.map(name => getInsignia(name, 'red')).filter(Boolean);
+            const blueInsigs = customConfig.blue.map(name => getInsignia(name, 'blue')).filter(Boolean);
+            const greenInsigs = customConfig.green.map(name => getInsignia(name, 'green')).filter(Boolean);
+            
+            // 计算属性
+            const result = calculateDamage(baseStats, customConfig.food, redInsigs, blueInsigs, greenInsigs);
+            
+            // 更新伤害显示
+            document.getElementById('customDamageValue').textContent = result.damage.toFixed(2);
+            document.getElementById('customBaseDamage').textContent = baseDamage.toFixed(2);
+            
+            const diff = ((result.damage - baseDamage) / baseDamage * 100).toFixed(1);
+            const diffEl = document.getElementById('customDamageDiff');
+            diffEl.textContent = (diff >= 0 ? '+' : '') + diff + '%';
+            diffEl.className = 'damage-diff' + (diff < 0 ? ' negative' : '');
+            
+            // 更新属性显示
+            document.getElementById('customFinalATK').textContent = formatNumber(result.finalATK);
+            document.getElementById('customFinalDEF').textContent = formatNumber(result.finalDEF);
+            document.getElementById('customFinalHP').textContent = formatNumber(result.finalHP);
+            document.getElementById('customCritRate').textContent = formatPercent(result.critRate);
+            document.getElementById('customCritDmg').textContent = result.critDmg.toFixed(3);
+            document.getElementById('customFlowPower').textContent = formatPercent(result.flowPower);
+            document.getElementById('customFullFlow').textContent = formatPercent(result.fullFlow);
+            document.getElementById('customChase').textContent = formatPercent(result.chase);
+            document.getElementById('customBreakPower').textContent = formatPercent(result.breakPower);
+            document.getElementById('customHeal').textContent = formatPercent(result.heal);
+            document.getElementById('customChargeEff').textContent = formatPercent(result.chargeEff);
+            
+            // 更新铭文汇总
+            const redSummary = customConfig.red.length > 0 ? customConfig.red.slice(0, 3).join(', ') + (customConfig.red.length > 3 ? '...' : '') : '未选择';
+            const blueSummary = customConfig.blue.length > 0 ? customConfig.blue.slice(0, 3).join(', ') + (customConfig.blue.length > 3 ? '...' : '') : '未选择';
+            const greenSummary = customConfig.green.length > 0 ? customConfig.green.slice(0, 3).join(', ') + (customConfig.green.length > 3 ? '...' : '') : '未选择';
+            
+            document.getElementById('customRedSummary').textContent = `${redSummary} (${customConfig.red.length}/6)`;
+            document.getElementById('customBlueSummary').textContent = `${blueSummary} (${customConfig.blue.length}/6)`;
+            document.getElementById('customGreenSummary').textContent = `${greenSummary} (${customConfig.green.length}/6)`;
+        }
+        
+        // 从搜索结果导入
+        function applyFromResults() {
+            const results = window.lastSearchResults;
+            if (!results || results.length === 0) {
+                alert('请先运行一次搜索！');
+                return;
+            }
+            
+            // 使用第一个结果
+            const result = results[0];
+            
+            // 应用共鸣
+            if (result.character) {
+                // 找到共鸣key
+                for (const [key, char] of Object.entries(CHARACTERS)) {
+                    if (char.name === result.character.name) {
+                        selectCustomCharacter(key);
+                        break;
+                    }
+                }
+            }
+            
+            // 应用装备
+            if (result.equipment) {
+                selectCustomEquipment(result.equipment.id);
+            }
+            
+            // 应用食物
+            if (result.food) {
+                selectCustomFood(result.food);
+            }
+            
+            // 清空并应用红区铭文
+            customConfig.red = [];
+            for (const insig of result.red) {
+                if (insig && insig.name) {
+                    customConfig.red.push(insig.name);
+                }
+            }
+            updateAllInsigniaDisplays('red');
+            
+            // 清空并应用蓝区铭文
+            customConfig.blue = [];
+            for (const insig of result.blue) {
+                if (insig && insig.name) {
+                    customConfig.blue.push(insig.name);
+                }
+            }
+            updateAllInsigniaDisplays('blue');
+            
+            // 清空并应用绿区铭文
+            customConfig.green = [];
+            for (const insig of result.green) {
+                if (insig && insig.name) {
+                    customConfig.green.push(insig.name);
+                }
+            }
+            updateAllInsigniaDisplays('green');
+            
+            updateCustomConfigDisplay();
+            
+            // 滚动到自定义配置板块
+            document.getElementById('customConfigSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 保存搜索结果供导入使用
+        window.lastSearchResults = [];
+
+        // 初始化
+        init();
+        initCustomConfig();
+    </script>
+    
+    <!-- 底部信息 -->
+    <div class="footer-notice">
+        <div class="footer-content">
+            <p>⚠️ 计算器尚在开发阶段，会出现很多bug，如遇到问题请联系作者</p>
+            <p>作者B站@暴走怪蜀黍，作者完全不懂编程，代码全是AI写的，恳请各位大佬帮忙指正错误</p>
+            <p>感谢B站@Ahhozp提供伤害计算公式和修改指导</p>
+            <p class="footer-date">2026.4.25，因为作者只练了花木兰和西施，所以其他共鸣的数据未知，暂不开放，希望练了其他共鸣的大佬帮忙提供一下数据</p>
+        </div>
+    </div>
+</body>
+</html>
